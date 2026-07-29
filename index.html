@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Argumenta Quest - Petualangan Teks Argumentasi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #0f172a; overflow: hidden;
+            font-family: 'Poppins', sans-serif;
+            touch-action: none;
+        }
+        #game-container {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        }
+        .ui-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 10; display: flex; flex-direction: column;
+            pointer-events: none; /* Let clicks pass to canvas when needed */
+        }
+        .interactive { pointer-events: auto; }
+        .hidden { display: none !important; }
+        
+        /* Custom Animations */
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        .floating { animation: float 3s ease-in-out infinite; }
+        @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+        .pop-in { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        
+        /* UI Elements */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.5);
+            border: 4px solid #3b82f6;
+        }
+        
+        .btn {
+            background: linear-gradient(to bottom, #3b82f6, #2563eb);
+            color: white; font-weight: bold; border-radius: 9999px;
+            padding: 12px 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #1e40af;
+            transition: all 0.1s; text-align: center; cursor: pointer; border: none;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.1), 0 0 0 #1e40af; }
+        .btn-green { background: linear-gradient(to bottom, #10b981, #059669); box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #047857; }
+        .btn-green:active { box-shadow: 0 0 0 #047857; }
+        .btn-red { background: linear-gradient(to bottom, #ef4444, #dc2626); box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #b91c1c; }
+        .btn-red:active { box-shadow: 0 0 0 #b91c1c; }
+        
+        .hud-text {
+            font-size: 1.5rem; font-weight: 800; color: white;
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+        }
+        
+        /* Certificate */
+        .certificate-bg {
+            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="%23fffbed"/><path d="M0 0 L50 50 L100 0 Z" fill="%23fef3c7" opacity="0.5"/></svg>');
+            background-size: cover;
+            border: 15px solid #d97706; outline: 5px solid #fbbf24;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Game Canvas Container -->
+    <div id="game-container"></div>
+
+    <!-- UI Layer -->
+    <div id="ui-layer" class="ui-layer">
+        
+        <!-- Main Menu -->
+        <div id="main-menu" class="interactive absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-blue-400 to-indigo-900 pop-in">
+            <div class="floating text-center mb-8">
+                <h1 class="text-6xl md:text-7xl font-extrabold text-white tracking-wider mb-2" style="text-shadow: 4px 4px 0 #1e3a8a, 8px 8px 0 rgba(0,0,0,0.2);">ARGUMENTA</h1>
+                <h2 class="text-4xl md:text-5xl font-extrabold text-yellow-300" style="text-shadow: 3px 3px 0 #b45309;">QUEST</h2>
+                <p class="text-white mt-4 text-lg font-semibold bg-black bg-opacity-30 p-2 rounded-lg">Petualangan Menjelajahi Dunia Teks Argumentasi</p>
+            </div>
+            
+            <div class="flex flex-col gap-4 w-64">
+                <button onclick="GameUI.startGame()" class="btn btn-green text-xl py-4">▶ Mulai Game</button>
+                <button onclick="GameUI.showMaterial()" class="btn">📚 Materi</button>
+                <button onclick="GameUI.showScores()" class="btn">🏆 Skor</button>
+            </div>
+            
+            <div class="mt-8 text-center bg-black/40 px-6 py-3 rounded-2xl backdrop-blur-sm border border-white/20 pop-in shadow-lg">
+                <p class="text-white text-lg font-bold">Dibuat oleh : Dwi Harry Pambudi, M.Pd</p>
+                <p class="text-yellow-300 text-sm font-semibold tracking-wide mt-1">Guru SMK N 2 Songgom</p>
+            </div>
+
+            <p class="absolute bottom-4 text-white/50 text-sm">Gunakan Keyboard (Panah/WASD + Spasi) atau Sentuh Layar</p>
+        </div>
+
+        <!-- Material Menu -->
+        <div id="material-menu" class="interactive hidden absolute inset-0 bg-black/80 flex items-center justify-center p-4">
+            <div class="glass-panel w-full max-w-4xl h-5/6 flex flex-col pop-in">
+                <div class="bg-blue-600 text-white p-4 rounded-t-xl flex justify-between items-center">
+                    <h2 class="text-2xl font-bold">📚 Materi Teks Argumentasi</h2>
+                    <button onclick="GameUI.hideMaterial()" class="text-white font-bold text-xl hover:text-red-300">❌</button>
+                </div>
+                <div class="p-6 overflow-y-auto flex-1 text-gray-800 text-lg leading-relaxed">
+                    <h3 class="font-bold text-xl text-blue-700">1. Pengertian</h3>
+                    <p class="mb-4">Teks argumentasi adalah teks yang berisi pendapat atau opini yang didukung oleh fakta, data, dan alasan logis untuk meyakinkan pembaca.</p>
+                    <h3 class="font-bold text-xl text-blue-700">2. Tujuan</h3>
+                    <p class="mb-4">Meyakinkan pembaca agar setuju dengan pandangan penulis serta memengaruhi sikap atau tindakan pembaca.</p>
+                    <h3 class="font-bold text-xl text-blue-700">3. Struktur</h3>
+                    <ul class="list-disc pl-6 mb-4">
+                        <li><strong>Pendahuluan:</strong> Berisi latar belakang masalah dan pernyataan sikap (tesis).</li>
+                        <li><strong>Tubuh Argumen:</strong> Berisi alasan logis, data, dan fakta yang mendukung pendapat.</li>
+                        <li><strong>Penegasan Ulang:</strong> Kesimpulan atau ringkasan argumen.</li>
+                    </ul>
+                    <h3 class="font-bold text-xl text-blue-700">4. Ciri-ciri & Fakta vs Opini</h3>
+                    <p class="mb-4">Bersifat objektif, logis, menggunakan bahasa baku. Menggunakan kalimat <strong>Fakta</strong> (dapat dibuktikan kebenarannya, misal: "Indonesia merdeka tahun 1945") untuk mendukung <strong>Opini</strong> (pendapat/pandangan pribadi, misal: "Pendidikan adalah hal paling penting").</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- HUD (Heads Up Display) -->
+        <div id="hud" class="hidden absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none">
+            <div class="flex flex-col gap-2">
+                <div class="hud-text flex items-center gap-2" id="hud-lives">❤️❤️❤️</div>
+                <div class="hud-text text-xl" id="hud-level">Level: 1</div>
+            </div>
+            <div class="hud-text text-4xl text-yellow-300" id="hud-msg" style="opacity:0; transition: opacity 0.5s;">+100</div>
+            <div class="flex flex-col gap-2 text-right">
+                <div class="hud-text text-yellow-400 flex justify-end items-center gap-2" id="hud-score">0 ⭐</div>
+                <div class="hud-text text-gray-200 flex justify-end items-center gap-2" id="hud-coins">0 🪙</div>
+            </div>
+        </div>
+        
+        <!-- Mobile Controls -->
+        <div id="mobile-controls" class="hidden interactive absolute bottom-4 left-0 w-full px-6 flex justify-between items-end opacity-60">
+            <div class="flex gap-4">
+                <button id="btn-left" class="w-16 h-16 bg-white/30 rounded-full border-2 border-white text-3xl flex items-center justify-center text-white active:bg-white/60">◀</button>
+                <button id="btn-right" class="w-16 h-16 bg-white/30 rounded-full border-2 border-white text-3xl flex items-center justify-center text-white active:bg-white/60">▶</button>
+            </div>
+            <div>
+                <button id="btn-jump" class="w-20 h-20 bg-blue-500/50 rounded-full border-2 border-white text-4xl flex items-center justify-center text-white active:bg-blue-500/90 shadow-lg mb-2">▲</button>
+            </div>
+        </div>
+
+        <!-- Quiz / Mini Game Overlay -->
+        <div id="quiz-overlay" class="interactive hidden absolute inset-0 bg-black/80 flex items-center justify-center p-4">
+            <div class="glass-panel w-full max-w-2xl p-6 pop-in text-center">
+                <h2 id="quiz-title" class="text-3xl font-extrabold text-blue-700 mb-2">Tantangan!</h2>
+                <p id="quiz-question" class="text-xl text-gray-800 mb-6 font-semibold">Pertanyaan muncul di sini...</p>
+                
+                <!-- Options Container -->
+                <div id="quiz-options" class="flex flex-col gap-3">
+                    <!-- Buttons injected via JS -->
+                </div>
+                
+                <!-- Custom Mini Game Container (e.g. Sort) -->
+                <div id="minigame-container" class="hidden flex flex-col gap-2 mb-4">
+                    <!-- Injected via JS -->
+                </div>
+                
+                <p id="quiz-feedback" class="mt-4 text-xl font-bold hidden"></p>
+            </div>
+        </div>
+
+        <!-- Game Over / Win Screen -->
+        <div id="result-screen" class="interactive hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4">
+            <div id="certificate" class="hidden certificate-bg w-full max-w-3xl p-10 text-center flex flex-col items-center pop-in mb-6 relative">
+                <div class="absolute top-0 left-0 w-full h-full pointer-events-none" style="background: radial-gradient(circle, transparent 20%, #fffbed 120%);"></div>
+                <div class="text-6xl mb-4 relative z-10">🏆</div>
+                <h1 class="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 relative z-10 uppercase font-serif">Sertifikat Penghargaan</h1>
+                <h2 class="text-2xl text-gray-700 mb-6 relative z-10">Diberikan Kepada: Ahli Teks Argumentasi</h2>
+                <p class="text-lg text-gray-800 mb-4 relative z-10 font-medium">Telah berhasil menyelesaikan Argumenta Quest dan membuktikan pemahaman luar biasa dalam menyusun fakta dan opini.</p>
+                <div class="text-5xl font-bold text-green-600 mt-2 relative z-10" id="cert-score">Nilai: 100</div>
+                <div class="mt-8 border-t-2 border-gray-400 pt-2 relative z-10 w-48 text-gray-600 font-bold">Instruktur Literasi</div>
+            </div>
+            
+            <div id="game-over-content" class="text-center pop-in">
+                <h1 id="result-title" class="text-6xl font-bold text-white mb-4">Game Over</h1>
+                <p id="result-desc" class="text-2xl text-gray-300 mb-8">Jangan menyerah! Ayo belajar lagi.</p>
+                <div class="flex gap-4 justify-center">
+                    <button onclick="GameUI.returnToMenu()" class="btn">🏠 Menu Utama</button>
+                    <button onclick="GameUI.startGame()" class="btn btn-green">🔄 Main Lagi</button>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Sfx Synthesizer (No external sound files needed)
+        class AudioSynth {
+            constructor() {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                this.enabled = true;
+            }
+            playTone(freq, type, duration, vol=0.1) {
+                if(!this.enabled || this.ctx.state === 'suspended') return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(); osc.stop(this.ctx.currentTime + duration);
+            }
+            jump() { this.playTone(300, 'sine', 0.2, 0.2); setTimeout(()=>this.playTone(500, 'sine', 0.2, 0.2), 50); }
+            coin() { this.playTone(800, 'sine', 0.1, 0.1); setTimeout(()=>this.playTone(1200, 'sine', 0.2, 0.1), 50); }
+            correct() { 
+                this.playTone(440, 'triangle', 0.1); 
+                setTimeout(()=>this.playTone(554, 'triangle', 0.1), 100); 
+                setTimeout(()=>this.playTone(659, 'triangle', 0.3), 200); 
+            }
+            wrong() { this.playTone(200, 'sawtooth', 0.3, 0.2); setTimeout(()=>this.playTone(150, 'sawtooth', 0.4, 0.2), 150); }
+            hurt() { this.playTone(100, 'square', 0.3, 0.3); }
+            win() {
+                [523, 659, 783, 1046].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'square', 0.3, 0.1), i * 150);
+                });
+            }
+            bossHit() { this.playTone(150, 'sawtooth', 0.5, 0.4); }
+            resume() { if(this.ctx.state === 'suspended') this.ctx.resume(); }
+        }
+        const sfx = new AudioSynth();
+
+        // Global Game State
+        const GameState = {
+            lives: 3, score: 0, coins: 0, level: 1, maxLevel: 5, phaserGame: null,
+            reset() { this.lives = 3; this.score = 0; this.coins = 0; this.level = 1; }
+        };
+
+        // Quiz Database based on Teks Argumentasi
+        const QuizData = {
+            1: [ // Level 1: Pengertian
+                { q: "Yang dimaksud teks argumentasi adalah....", options: ["Teks yang berisi cerita fiksi.", "Teks yang berisi pendapat disertai fakta logis.", "Teks panduan melakukan sesuatu.", "Teks laporan hasil observasi."], ans: 1 },
+                { q: "Tujuan utama teks argumentasi adalah...", options: ["Menghibur pembaca.", "Mendeskripsikan pemandangan.", "Meyakinkan pembaca akan suatu pendapat.", "Menceritakan pengalaman pribadi."], ans: 2 }
+            ],
+            2: [ // Level 2: Struktur
+                { q: "Struktur teks argumentasi yang benar adalah...", options: ["Pendahuluan - Tubuh Argumen - Penegasan Ulang", "Orientasi - Komplikasi - Resolusi", "Tesis - Argumentasi - Reorientasi", "Pernyataan Umum - Deskripsi Bagian"], ans: 0 },
+                { q: "Bagian yang berisi alasan, fakta, dan data disebut...", options: ["Pendahuluan", "Tubuh Argumen", "Penegasan Ulang", "Abstrak"], ans: 1 }
+            ],
+            3: [ // Level 3: Ciri
+                { q: "Teks argumentasi yang baik harus bersifat...", options: ["Subjektif dan emosional", "Objektif dan logis", "Berdasarkan imajinasi", "Singkat dan tidak jelas"], ans: 1 },
+                { q: "Apa peran data/fakta dalam teks argumentasi?", options: ["Sebagai hiasan agar teks panjang.", "Untuk memperkuat pendapat penulis.", "Hanya pelengkap yang tidak wajib.", "Untuk membingungkan pembaca."], ans: 1 }
+            ],
+            4: [ // Level 4: Fakta vs Opini
+                { q: "Manakah yang merupakan kalimat FAKTA?", options: ["Belajar itu sangat melelahkan.", "Gunung Semeru terletak di Jawa Timur.", "Cuaca hari ini terasa sangat indah.", "Film tersebut tidak layak ditonton."], ans: 1 },
+                { q: "Manakah yang merupakan kalimat OPINI?", options: ["Air mendidih pada suhu 100 derajat Celcius.", "Matahari terbit dari timur.", "Membaca buku lebih menyenangkan daripada bermain game.", "Indonesia merdeka pada tahun 1945."], ans: 2 }
+            ],
+            boss: [ // Level 5: Boss (Campuran)
+                { q: "Apa itu Teks Argumentasi?", options: ["Cerita", "Pendapat+Bukti", "Prosedur"], ans: 1 },
+                { q: "Struktur awal argumen?", options: ["Pendahuluan", "Isi", "Penutup"], ans: 0 },
+                { q: "Fakta bersifat?", options: ["Objektif", "Subjektif", "Relatif"], ans: 0 },
+                { q: "Opini bersifat?", options: ["Pasti", "Subjektif", "Terukur"], ans: 1 }
+                // Boss fight will loop these rapidly
+            ]
+        };
+
+        // UI Controller
+        const GameUI = {
+            show(id) { document.getElementById(id).classList.remove('hidden'); },
+            hide(id) { document.getElementById(id).classList.add('hidden'); },
+            
+            showMaterial() { this.hide('main-menu'); this.show('material-menu'); },
+            hideMaterial() { this.hide('material-menu'); this.show('main-menu'); },
+            showScores() { alert("Skor Tertinggi Lokal: \n" + (localStorage.getItem('argQuestScore') || 'Belum ada data')); },
+            
+            startGame() {
+                sfx.resume();
+                this.hide('main-menu'); this.hide('result-screen');
+                this.show('hud'); 
+                if(window.innerWidth < 1024) this.show('mobile-controls');
+                
+                GameState.reset();
+                this.updateHUD();
+                
+                if (GameState.phaserGame) {
+                    GameState.phaserGame.destroy(true);
+                    document.getElementById('game-container').innerHTML = '';
+                }
+                initPhaser();
+            },
+            
+            updateHUD() {
+                document.getElementById('hud-lives').innerText = '❤️'.repeat(GameState.lives);
+                document.getElementById('hud-score').innerText = `${GameState.score} ⭐`;
+                document.getElementById('hud-coins').innerText = `${GameState.coins} 🪙`;
+                document.getElementById('hud-level').innerText = `Level: ${GameState.level}`;
+            },
+
+            showFloatingText(text, isGood=true) {
+                const el = document.getElementById('hud-msg');
+                el.innerText = text;
+                el.className = `hud-text text-4xl ${isGood ? 'text-green-400' : 'text-red-500'} pop-in`;
+                el.style.opacity = 1;
+                setTimeout(() => { el.style.opacity = 0; }, 1000);
+            },
+            
+            triggerQuiz(level, callback) {
+                const scene = GameState.phaserGame.scene.scenes.find(s => s.scene.isActive());
+                if(scene) scene.scene.pause();
+                
+                this.show('quiz-overlay');
+                const qData = (level === 'boss') ? 
+                    QuizData.boss[Math.floor(Math.random() * QuizData.boss.length)] : 
+                    QuizData[level][Math.floor(Math.random() * QuizData[level].length)];
+                
+                document.getElementById('quiz-question').innerText = qData.q;
+                const optionsContainer = document.getElementById('quiz-options');
+                optionsContainer.innerHTML = '';
+                
+                qData.options.forEach((opt, index) => {
+                    const btn = document.createElement('button');
+                    btn.className = 'btn text-lg py-3 hover:scale-105';
+                    btn.innerText = opt;
+                    btn.onclick = () => this.handleQuizAnswer(index === qData.ans, callback, scene);
+                    optionsContainer.appendChild(btn);
+                });
+            },
+            
+            handleQuizAnswer(isCorrect, callback, scene) {
+                const feedback = document.getElementById('quiz-feedback');
+                feedback.classList.remove('hidden');
+                
+                if (isCorrect) {
+                    sfx.correct();
+                    feedback.innerText = "Benar! +100 Poin";
+                    feedback.className = "mt-4 text-2xl font-bold text-green-500 pop-in";
+                    GameState.score += 100;
+                    this.updateHUD();
+                    this.showFloatingText('+100');
+                    setTimeout(() => {
+                        this.hide('quiz-overlay');
+                        feedback.classList.add('hidden');
+                        if(scene) scene.scene.resume();
+                        if(callback) callback(true);
+                    }, 1000);
+                } else {
+                    sfx.wrong();
+                    feedback.innerText = "Salah! Nyawa berkurang.";
+                    feedback.className = "mt-4 text-2xl font-bold text-red-500 pop-in";
+                    GameState.lives -= 1;
+                    this.updateHUD();
+                    
+                    if (GameState.lives <= 0) {
+                        setTimeout(() => {
+                            this.hide('quiz-overlay');
+                            this.gameOver(false);
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            this.hide('quiz-overlay');
+                            feedback.classList.add('hidden');
+                            if(scene) scene.scene.resume();
+                            if(callback) callback(false); // Let boss battle handle wrong answer
+                        }, 1000);
+                    }
+                }
+            },
+            
+            gameOver(isWin) {
+                if(GameState.phaserGame) GameState.phaserGame.scene.scenes.forEach(s => s.scene.pause());
+                this.hide('hud'); this.hide('mobile-controls'); this.show('result-screen');
+                
+                const highscore = Math.max(GameState.score, parseInt(localStorage.getItem('argQuestScore')||0));
+                localStorage.setItem('argQuestScore', highscore);
+                
+                if (isWin) {
+                    sfx.win();
+                    if (GameState.score >= 500) { // Require decent score for certificate
+                        this.hide('game-over-content');
+                        this.show('certificate');
+                        document.getElementById('cert-score').innerText = `Nilai: ${GameState.score}`;
+                    } else {
+                        this.hide('certificate');
+                        this.show('game-over-content');
+                        document.getElementById('result-title').innerText = "Menang!";
+                        document.getElementById('result-title').className = "text-6xl font-bold text-green-400 mb-4";
+                        document.getElementById('result-desc').innerText = `Skor kamu: ${GameState.score}. Belajar lagi untuk dapat Sertifikat (Min 500)!`;
+                    }
+                } else {
+                    this.hide('certificate');
+                    this.show('game-over-content');
+                    document.getElementById('result-title').innerText = "Game Over";
+                    document.getElementById('result-title').className = "text-6xl font-bold text-red-500 mb-4";
+                    document.getElementById('result-desc').innerText = `Skor akhir: ${GameState.score}. Fakta berhasil dicuri Hoaks!`;
+                }
+            },
+
+            returnToMenu() {
+                this.hide('result-screen');
+                this.show('main-menu');
+                if (GameState.phaserGame) {
+                    GameState.phaserGame.destroy(true);
+                    GameState.phaserGame = null;
+                }
+            }
+        };
+
+        // Phaser Implementation
+        class BootScene extends Phaser.Scene {
+            constructor() { super('BootScene'); }
+            
+            create() {
+                // Generate Textures procedurally to avoid external loading
+                const g = this.add.graphics();
+                
+                // Platform Texture (Green Top, Brown Bottom)
+                g.fillStyle(0x4ade80, 1); g.fillRoundedRect(0, 0, 100, 32, {tl: 8, tr: 8, bl: 0, br: 0});
+                g.fillStyle(0x78350f, 1); g.fillRect(0, 32, 100, 32);
+                g.generateTexture('platform', 100, 64); g.clear();
+                
+                // Small Platform
+                g.fillStyle(0x4ade80, 1); g.fillRoundedRect(0, 0, 64, 32, 8);
+                g.generateTexture('platform_small', 64, 32); g.clear();
+
+                // Menggambar karakter siswa utuh (Full Body)
+                this.generateFullBodyPlayer('player');
+                
+                // Enemy (Hoaks)
+                this.generateEmojiTexture('enemy', '👾', '56px');
+                
+                // Collectibles
+                this.generateEmojiTexture('coin', '🪙', '40px');
+                this.generateEmojiTexture('fact', '📊', '40px');
+                this.generateEmojiTexture('book', '📚', '40px');
+                
+                // Door / Checkpoint
+                this.generateEmojiTexture('door', '🚪', '80px');
+                
+                // Boss
+                this.generateEmojiTexture('boss', '👹', '120px');
+
+                this.scene.start('PlayScene');
+            }
+
+            generateEmojiTexture(key, emoji, size) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 128; canvas.height = 128;
+                const ctx = canvas.getContext('2d');
+                ctx.font = `${size} Arial`;
+                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                // Draw shadow for better visibility
+                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
+                ctx.fillText(emoji, 64, 64);
+                this.textures.addCanvas(key, canvas);
+            }
+
+            generateFullBodyPlayer(key) {
+                const canvas = document.createElement('canvas');
+                canvas.width = 80;
+                canvas.height = 120;
+                const ctx = canvas.getContext('2d');
+
+                // Ransel (Backpack) - Biru
+                ctx.fillStyle = '#3b82f6';
+                ctx.fillRect(10, 35, 24, 38);
+                
+                // Lengan Belakang (Kiri)
+                ctx.fillStyle = '#f3f4f6'; // Lengan baju
+                ctx.fillRect(40, 42, 12, 16);
+                ctx.fillStyle = '#ffcc99'; // Kulit tangan
+                ctx.fillRect(42, 58, 8, 16);
+
+                // Badan (Kemeja Putih)
+                ctx.fillStyle = '#f3f4f6';
+                ctx.fillRect(28, 40, 30, 36);
+                
+                // Dasi - Merah
+                ctx.fillStyle = '#ef4444';
+                ctx.fillRect(46, 40, 6, 20);
+
+                // Leher
+                ctx.fillStyle = '#ffcc99';
+                ctx.fillRect(40, 34, 8, 8);
+
+                // Kepala - Warna Kulit
+                ctx.fillStyle = '#ffcc99'; 
+                ctx.beginPath();
+                ctx.arc(44, 22, 18, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Rambut - Hitam/Abu Gelap
+                ctx.fillStyle = '#1f2937'; 
+                ctx.beginPath();
+                ctx.arc(44, 18, 19, Math.PI, 0);
+                ctx.fill();
+                ctx.fillRect(25, 18, 8, 14); 
+
+                // Kacamata (Menghadap Kanan)
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(50, 14, 12, 8); // Lensa
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(52, 16, 4, 4);  // Pantulan Cahaya Lensa
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(40, 16, 10, 2); // Tangkai kacamata
+
+                // Celana / Kaki - Abu-abu gelap
+                ctx.fillStyle = '#4b5563'; 
+                ctx.fillRect(30, 76, 12, 28); // Kaki Belakang
+                ctx.fillRect(46, 76, 12, 28); // Kaki Depan
+
+                // Sepatu Hitam
+                ctx.fillStyle = '#111827';
+                ctx.fillRect(26, 104, 16, 12);
+                ctx.fillRect(46, 104, 20, 12); // Sepatu depan lebih mancung
+
+                // Lengan Depan (Kanan)
+                ctx.fillStyle = '#f3f4f6'; // Lengan baju
+                ctx.fillRect(34, 42, 14, 16);
+                ctx.fillStyle = '#ffcc99'; // Kulit tangan
+                ctx.fillRect(36, 58, 8, 16);
+
+                this.textures.addCanvas(key, canvas);
+            }
+        }
+
+        class PlayScene extends Phaser.Scene {
+            constructor() { super('PlayScene'); }
+
+            create() {
+                this.isBossLevel = GameState.level === GameState.maxLevel;
+                
+                // Dynamic Sky Background based on level
+                const colors = [0x38bdf8, 0x818cf8, 0xa78bfa, 0xf472b6, 0xf87171];
+                this.cameras.main.setBackgroundColor(colors[GameState.level - 1]);
+                
+                // Add Parallax Clouds (Generated shapes)
+                this.clouds = [];
+                for(let i=0; i<10; i++) {
+                    let cloud = this.add.circle(Phaser.Math.Between(0, 3000), Phaser.Math.Between(50, 300), Phaser.Math.Between(30, 80), 0xffffff, 0.8);
+                    cloud.setScrollFactor(0.2);
+                    this.clouds.push(cloud);
+                }
+
+                // Physics Groups
+                this.platforms = this.physics.add.staticGroup();
+                this.coins = this.physics.add.group({ allowGravity: false });
+                this.facts = this.physics.add.group({ allowGravity: false });
+                this.enemies = this.physics.add.group();
+                
+                // Level Generation
+                this.levelLength = this.isBossLevel ? 800 : 3000;
+                this.generateLevel(this.isBossLevel);
+
+                // Player Setup
+                this.player = this.physics.add.sprite(100, 300, 'player');
+                this.player.setScale(0.85); // Menyesuaikan ukuran proporsi karakter
+                this.player.setBounce(0.1);
+                this.player.setCollideWorldBounds(true);
+                
+                // Menyesuaikan hitbox collision untuk karakter berdiri utuh
+                this.player.body.setSize(40, 110); 
+                this.player.body.setOffset(20, 10); 
+                
+                // World Bounds
+                this.physics.world.setBounds(0, 0, this.levelLength, this.scale.height);
+                this.cameras.main.setBounds(0, 0, this.levelLength, this.scale.height);
+                this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
+
+                // Collisions
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.enemies, this.platforms);
+                
+                this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
+                this.physics.add.overlap(this.player, this.facts, this.collectFact, null, this);
+                this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
+
+                if (!this.isBossLevel) {
+                    this.door = this.physics.add.staticSprite(this.levelLength - 100, this.scale.height - 150, 'door');
+                    this.physics.add.overlap(this.player, this.door, this.reachDoor, null, this);
+                } else {
+                    this.boss = this.physics.add.sprite(this.levelLength - 200, this.scale.height - 200, 'boss');
+                    this.boss.setImmovable(true);
+                    this.boss.body.allowGravity = false;
+                    this.physics.add.collider(this.player, this.boss, this.hitBoss, null, this);
+                    this.bossHp = 3; // Need 3 correct answers to beat boss
+                    
+                    // Boss float animation
+                    this.tweens.add({
+                        targets: this.boss, y: '-=30', duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
+                    });
+                }
+
+                // Controls (Keyboard)
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.wasd = this.input.keyboard.addKeys('W,A,S,D,SPACE');
+                
+                // Mobile Controls Binding
+                this.bindMobileControls();
+                this.mobileLeft = false; this.mobileRight = false; this.mobileJump = false;
+
+                // Death plane
+                this.deathPlane = this.scale.height - 20;
+            }
+
+            generateLevel(isBoss) {
+                const h = this.scale.height;
+                const groundY = h - 64;
+                
+                // Start Platform
+                this.platforms.create(150, groundY, 'platform').setScale(3, 1).refreshBody();
+
+                if (isBoss) {
+                    // Boss arena
+                    this.platforms.create(400, groundY, 'platform').setScale(10, 1).refreshBody();
+                    return;
+                }
+
+                let curX = 400;
+                while (curX < this.levelLength - 400) {
+                    let gap = Phaser.Math.Between(50, 150);
+                    curX += gap;
+                    
+                    let yPos = groundY - Phaser.Math.Between(0, 3) * 60; // Vary height
+                    
+                    // Main platform
+                    let plat = this.platforms.create(curX, yPos, 'platform');
+                    plat.setScale(Phaser.Math.Between(1, 3), 1).refreshBody();
+                    
+                    // Add items or enemies randomly
+                    let rnd = Phaser.Math.Between(0, 100);
+                    if (rnd < 40) {
+                        // Coin
+                        let coin = this.coins.create(curX, yPos - 80, 'coin');
+                        this.tweens.add({ targets: coin, y: '-=10', duration: 800, yoyo: true, repeat: -1 });
+                    } else if (rnd < 70) {
+                        // Enemy
+                        let enemy = this.enemies.create(curX, yPos - 60, 'enemy');
+                        enemy.setVelocityX(Phaser.Math.Between(30, 80) * (Math.random() < 0.5 ? 1 : -1));
+                        enemy.setCollideWorldBounds(true);
+                        enemy.setBounceX(1);
+                    } else if (rnd < 90) {
+                        // Fact / Data (Bonus score)
+                        let fact = this.facts.create(curX, yPos - 120, Math.random()>0.5?'fact':'book');
+                        this.tweens.add({ targets: fact, scale: 1.2, duration: 500, yoyo: true, repeat: -1 });
+                    }
+                    
+                    curX += plat.width * plat.scaleX;
+                }
+                
+                // End Platform
+                this.platforms.create(this.levelLength - 150, groundY, 'platform').setScale(4, 1).refreshBody();
+            }
+
+            bindMobileControls() {
+                const btnL = document.getElementById('btn-left');
+                const btnR = document.getElementById('btn-right');
+                const btnJ = document.getElementById('btn-jump');
+                
+                const addEv = (el, type, val, prop) => {
+                    el.addEventListener(type, (e) => { e.preventDefault(); this[prop] = val; }, {passive: false});
+                };
+                addEv(btnL, 'touchstart', true, 'mobileLeft'); addEv(btnL, 'touchend', false, 'mobileLeft');
+                addEv(btnR, 'touchstart', true, 'mobileRight'); addEv(btnR, 'touchend', false, 'mobileRight');
+                addEv(btnJ, 'touchstart', true, 'mobileJump'); addEv(btnJ, 'touchend', false, 'mobileJump');
+            }
+
+            update() {
+                if (!this.player.active) return;
+
+                // Move Clouds
+                this.clouds.forEach(c => { c.x -= 0.1; if(c.x < -100) c.x = this.levelLength + 100; });
+
+                // Horizontal Movement
+                if (this.cursors.left.isDown || this.wasd.A.isDown || this.mobileLeft) {
+                    this.player.setVelocityX(-250);
+                    this.player.flipX = true;
+                } else if (this.cursors.right.isDown || this.wasd.D.isDown || this.mobileRight) {
+                    this.player.setVelocityX(250);
+                    this.player.flipX = false;
+                } else {
+                    this.player.setVelocityX(0);
+                }
+
+                // Jumping
+                const onGround = this.player.body.touching.down || this.player.body.blocked.down;
+                if ((this.cursors.up.isDown || this.wasd.W.isDown || this.wasd.SPACE.isDown || this.mobileJump) && onGround) {
+                    this.player.setVelocityY(-550);
+                    sfx.jump();
+                    // Reset jump flag to prevent hold-jumping
+                    this.mobileJump = false; 
+                }
+
+                // Fall into gap
+                if (this.player.y > this.deathPlane) {
+                    this.handleDeath();
+                }
+            }
+
+            collectCoin(player, coin) {
+                coin.destroy();
+                sfx.coin();
+                GameState.coins += 1;
+                GameState.score += 10;
+                GameUI.updateHUD();
+                GameUI.showFloatingText('+10', true);
+            }
+
+            collectFact(player, fact) {
+                fact.destroy();
+                sfx.coin();
+                GameState.score += 50;
+                GameUI.updateHUD();
+                GameUI.showFloatingText('Fakta!\n+50', true);
+            }
+
+            hitEnemy(player, enemy) {
+                // Jump on enemy
+                if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
+                    enemy.destroy();
+                    sfx.bossHit();
+                    player.setVelocityY(-300);
+                    GameState.score += 20;
+                    GameUI.updateHUD();
+                } else {
+                    this.handleDeath();
+                }
+            }
+
+            handleDeath() {
+                if(!this.player.active) return;
+                sfx.hurt();
+                GameState.lives -= 1;
+                GameUI.updateHUD();
+                
+                this.player.setTint(0xff0000);
+                this.player.setActive(false);
+                this.physics.pause();
+
+                if (GameState.lives <= 0) {
+                    setTimeout(() => GameUI.gameOver(false), 1000);
+                } else {
+                    // Respawn
+                    setTimeout(() => {
+                        this.player.setActive(true);
+                        this.player.clearTint();
+                        this.player.setPosition(100, 300);
+                        this.physics.resume();
+                    }, 1000);
+                }
+            }
+
+            reachDoor(player, door) {
+                if(this.doorLocked) return;
+                this.doorLocked = true; // prevent multiple triggers
+                this.player.setVelocityX(0);
+                
+                GameUI.triggerQuiz(GameState.level, (correct) => {
+                    if(correct) {
+                        GameState.level++;
+                        GameUI.updateHUD();
+                        if (GameState.level > GameState.maxLevel) {
+                            GameUI.gameOver(true); // Should not happen here normally due to boss logic
+                        } else {
+                            this.scene.restart(); // Load next level map
+                        }
+                    } else {
+                        this.doorLocked = false;
+                        // Player respawns via handleQuizAnswer logic if lives > 0
+                    }
+                });
+            }
+
+            hitBoss(player, boss) {
+                if(this.bossLocked) return;
+                this.bossLocked = true;
+                
+                // Bounce player back
+                player.setVelocityX(-300);
+                player.setVelocityY(-200);
+
+                // Boss question
+                GameUI.triggerQuiz('boss', (correct) => {
+                    if (correct) {
+                        this.bossHp--;
+                        sfx.bossHit();
+                        boss.setTint(0xff0000);
+                        setTimeout(() => boss.clearTint(), 200);
+                        
+                        if (this.bossHp <= 0) {
+                            boss.destroy();
+                            // Spawn giant star/fakta
+                            let winItem = this.physics.add.sprite(boss.x, boss.y, 'fact').setScale(2);
+                            winItem.body.allowGravity = false;
+                            this.physics.add.overlap(this.player, winItem, () => {
+                                GameState.score += 500;
+                                GameUI.gameOver(true); // Win!
+                            });
+                        } else {
+                            this.bossLocked = false;
+                        }
+                    } else {
+                        this.bossLocked = false;
+                        // Wrong answer penalty handled by UI (lives -1)
+                    }
+                });
+            }
+        }
+
+        function initPhaser() {
+            const config = {
+                type: Phaser.AUTO,
+                width: window.innerWidth,
+                height: window.innerHeight,
+                parent: 'game-container',
+                transparent: true,
+                physics: {
+                    default: 'arcade',
+                    arcade: { gravity: { y: 1000 }, debug: false }
+                },
+                scale: {
+                    mode: Phaser.Scale.RESIZE,
+                    autoCenter: Phaser.Scale.CENTER_BOTH
+                },
+                scene: [BootScene, PlayScene]
+            };
+            GameState.phaserGame = new Phaser.Game(config);
+        }
+
+        // Handle window resize dynamically
+        window.addEventListener('resize', () => {
+            if (GameState.phaserGame && GameState.phaserGame.scale) {
+                GameState.phaserGame.scale.resize(window.innerWidth, window.innerHeight);
+            }
+        });
+        
+    </script>
+</body>
+</html>
