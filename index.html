@@ -3,829 +3,1065 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Argumenta Quest - Petualangan Teks Argumentasi</title>
+    <title>TANK OBSERVATION: Misi Menyelamatkan Putri Observasi</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&display=swap" rel="stylesheet">
     <style>
-        body, html {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #0f172a; overflow: hidden;
-            font-family: 'Poppins', sans-serif;
-            touch-action: none;
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Inter', sans-serif;
+            touch-action: none; /* Prevent scroll on mobile */
+            user-select: none;
         }
-        #game-container {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 1;
+        #gameCanvas {
+            display: block;
+            width: 100vw;
+            height: 100vh;
         }
-        .ui-layer {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 10; display: flex; flex-direction: column;
-            pointer-events: none; /* Let clicks pass to canvas when needed */
-        }
-        .interactive { pointer-events: auto; }
-        .hidden { display: none !important; }
-        
-        /* Custom Animations */
-        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        .floating { animation: float 3s ease-in-out infinite; }
-        @keyframes pop { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
-        .pop-in { animation: pop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
-        
-        /* UI Elements */
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2), inset 0 0 0 2px rgba(255,255,255,0.5);
-            border: 4px solid #3b82f6;
-        }
-        
-        .btn {
-            background: linear-gradient(to bottom, #3b82f6, #2563eb);
-            color: white; font-weight: bold; border-radius: 9999px;
-            padding: 12px 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #1e40af;
-            transition: all 0.1s; text-align: center; cursor: pointer; border: none;
-            text-transform: uppercase; letter-spacing: 1px;
-        }
-        .btn:active { transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0.1), 0 0 0 #1e40af; }
-        .btn-green { background: linear-gradient(to bottom, #10b981, #059669); box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #047857; }
-        .btn-green:active { box-shadow: 0 0 0 #047857; }
-        .btn-red { background: linear-gradient(to bottom, #ef4444, #dc2626); box-shadow: 0 4px 6px rgba(0,0,0,0.1), 0 4px 0 #b91c1c; }
-        .btn-red:active { box-shadow: 0 0 0 #b91c1c; }
-        
-        .hud-text {
-            font-size: 1.5rem; font-weight: 800; color: white;
-            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-        }
-        
-        /* Certificate */
-        .certificate-bg {
-            background: url('data:image/svg+xml;utf8,<svg width="100" height="100" xmlns="http://www.w3.org/2000/svg"><rect width="100" height="100" fill="%23fffbed"/><path d="M0 0 L50 50 L100 0 Z" fill="%23fef3c7" opacity="0.5"/></svg>');
+        .screen-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(rgba(10, 15, 30, 0.75), rgba(10, 15, 30, 0.75)), url('https://i.imgur.com/BPmeyOQ.png');
             background-size: cover;
-            border: 15px solid #d97706; outline: 5px solid #fbbf24;
+            background-position: center;
+            backdrop-filter: blur(4px);
+            z-index: 50;
+            transition: opacity 0.5s ease;
+        }
+        .hidden {
+            display: none !important;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .title-glow {
+            text-shadow: 0 0 10px #0ff, 0 0 20px #0ff, 0 0 40px #0ff;
+        }
+        .btn-neon {
+            background: linear-gradient(45deg, #00f2fe, #4facfe);
+            border: 2px solid #0ff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.5);
+            transition: all 0.2s;
+        }
+        .btn-neon:active {
+            transform: scale(0.95);
+            box-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+        }
+        
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+        }
+        .bar-container {
+            width: 200px;
+            height: 20px;
+            background: rgba(0,0,0,0.5);
+            border: 2px solid #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 5px;
+        }
+        .bar-fill-hp { height: 100%; background: linear-gradient(90deg, #f00, #f88); transition: width 0.3s; }
+        .bar-fill-energy { height: 100%; background: linear-gradient(90deg, #00f, #0ff); transition: width 0.3s; }
+        
+        #controls {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            justify-content: space-between;
+            pointer-events: auto;
+        }
+        .control-group { display: flex; gap: 10px; }
+        .ctrl-btn {
+            width: 60px;
+            height: 60px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(0, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+        .ctrl-btn:active, .ctrl-btn.active {
+            background: rgba(0, 255, 255, 0.4);
+            border-color: #0ff;
+            box-shadow: 0 0 10px #0ff;
+        }
+        .action-btn { border-radius: 15px; width: 80px; font-weight: bold; font-size: 14px;}
+        .bomb-btn { border-color: rgba(255,0,0,0.5); }
+        .bomb-btn:active, .bomb-btn.active { background: rgba(255,0,0,0.5); box-shadow: 0 0 15px #f00; }
+        
+        @keyframes popIn {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .modal-content {
+            animation: popIn 0.3s ease-out forwards;
+        }
+        
+        @media (max-width: 768px) {
+            .bar-container { width: 120px; }
+            #hud h2 { font-size: 1rem; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Game Canvas Container -->
-    <div id="game-container"></div>
+    <!-- Control Buttons (Selalu tampil & aktif di semua layar) -->
+    <div id="global-controls" class="fixed top-3 right-3 z-[60] flex flex-col gap-2 pointer-events-auto">
+        <button id="bgm-btn" onclick="toggleBGM()" class="bg-gray-900/80 hover:bg-gray-800 text-cyan-300 border border-cyan-500/50 px-3 py-2 rounded-xl text-xs md:text-sm font-bold shadow-[0_0_10px_rgba(0,255,255,0.3)] backdrop-blur-md transition-all active:scale-95 flex items-center justify-center gap-1.5 cursor-pointer">
+            <span id="bgm-icon">🎵</span> <span id="bgm-text">Musik: ON</span>
+        </button>
+        <button onclick="toggleFullscreen()" class="bg-gray-900/80 hover:bg-gray-800 text-gray-200 border border-gray-600/50 px-3 py-2 rounded-xl text-xs md:text-sm font-bold shadow-lg backdrop-blur-md transition-all active:scale-95 text-center cursor-pointer">
+            ⛶ Fullscreen
+        </button>
+    </div>
 
-    <!-- UI Layer -->
-    <div id="ui-layer" class="ui-layer">
-        
-        <!-- Main Menu -->
-        <div id="main-menu" class="interactive absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-blue-400 to-indigo-900 pop-in">
-            <div class="floating text-center mb-8">
-                <h1 class="text-6xl md:text-7xl font-extrabold text-white tracking-wider mb-2" style="text-shadow: 4px 4px 0 #1e3a8a, 8px 8px 0 rgba(0,0,0,0.2);">ARGUMENTA</h1>
-                <h2 class="text-4xl md:text-5xl font-extrabold text-yellow-300" style="text-shadow: 3px 3px 0 #b45309;">QUEST</h2>
-                <p class="text-white mt-4 text-lg font-semibold bg-black bg-opacity-30 p-2 rounded-lg">Petualangan Menjelajahi Dunia Teks Argumentasi</p>
-            </div>
-            
-            <div class="flex flex-col gap-4 w-64">
-                <button onclick="GameUI.startGame()" class="btn btn-green text-xl py-4">▶ Mulai Game</button>
-                <button onclick="GameUI.showMaterial()" class="btn">📚 Materi</button>
-                <button onclick="GameUI.showScores()" class="btn">🏆 Skor</button>
-            </div>
-            
-            <div class="mt-8 text-center bg-black/40 px-6 py-3 rounded-2xl backdrop-blur-sm border border-white/20 pop-in shadow-lg">
-                <p class="text-white text-lg font-bold">Dibuat oleh : Dwi Harry Pambudi, M.Pd</p>
-                <p class="text-yellow-300 text-sm font-semibold tracking-wide mt-1">Guru SMK N 2 Songgom</p>
-            </div>
+    <canvas id="gameCanvas"></canvas>
 
-            <p class="absolute bottom-4 text-white/50 text-sm">Gunakan Keyboard (Panah/WASD + Spasi) atau Sentuh Layar</p>
+    <div id="hud" class="hidden">
+        <div>
+            <div class="text-white font-bold text-sm mb-1" style="text-shadow: 1px 1px 2px black;">HP</div>
+            <div class="bar-container"><div id="hp-bar" class="bar-fill-hp" style="width: 100%;"></div></div>
+            <div class="text-white font-bold text-sm mb-1 mt-2" style="text-shadow: 1px 1px 2px black;">ENERGI</div>
+            <div class="bar-container"><div id="energy-bar" class="bar-fill-energy" style="width: 100%;"></div></div>
         </div>
+        <div class="text-center text-white">
+            <h2 id="level-display" class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500" style="filter: drop-shadow(0 0 5px cyan);">LEVEL 1</h2>
+            <p id="level-name" class="text-sm font-semibold">Hutan Observasi</p>
+            <p class="text-xl font-bold mt-2">SKOR: <span id="score-display">0</span></p>
+        </div>
+        <div><!-- Spacer right section --></div>
+    </div>
 
-        <!-- Material Menu -->
-        <div id="material-menu" class="interactive hidden absolute inset-0 bg-black/80 flex items-center justify-center p-4">
-            <div class="glass-panel w-full max-w-4xl h-5/6 flex flex-col pop-in">
-                <div class="bg-blue-600 text-white p-4 rounded-t-xl flex justify-between items-center">
-                    <h2 class="text-2xl font-bold">📚 Materi Teks Argumentasi</h2>
-                    <button onclick="GameUI.hideMaterial()" class="text-white font-bold text-xl hover:text-red-300">❌</button>
+    <div id="controls" class="hidden">
+        <div class="control-group">
+            <div class="ctrl-btn" id="btn-left">⬅️</div>
+            <div class="ctrl-btn" id="btn-right">➡️</div>
+        </div>
+        <div class="control-group" style="align-items: flex-end;">
+            <div class="flex flex-col gap-2 mr-4">
+                <div class="ctrl-btn" id="btn-up" style="width:50px; height:50px; font-size:18px;">⬆️</div>
+                <div class="ctrl-btn" id="btn-down" style="width:50px; height:50px; font-size:18px;">⬇️</div>
+            </div>
+            <div class="ctrl-btn action-btn bomb-btn" id="btn-bomb">🔥<br>BOM</div>
+            <div class="ctrl-btn action-btn" id="btn-shoot">💥<br>TEMBAK</div>
+        </div>
+    </div>
+
+    <div id="start-screen" class="screen-overlay">
+        <h1 class="text-5xl md:text-7xl font-black text-white text-center mb-2 title-glow tracking-wider">TANK<br>OBSERVATION</h1>
+        <p class="text-xl md:text-2xl text-cyan-300 font-semibold mb-8 text-center px-4">⭐ Misi Menyelamatkan Putri Observasi! ⭐</p>
+        
+        <div class="flex flex-col gap-4 items-center mb-6">
+            <button onclick="showForm()" class="btn-neon text-white font-bold py-4 px-10 rounded-full text-2xl uppercase tracking-widest cursor-pointer">
+                ▶ Mulai Permainan
+            </button>
+            <button onclick="showInstructions()" class="bg-gray-900/90 hover:bg-gray-800 text-cyan-300 border border-cyan-400/60 font-bold py-3 px-8 rounded-full text-lg uppercase tracking-wider shadow-[0_0_15px_rgba(0,255,255,0.3)] backdrop-blur-md transition-all active:scale-95 cursor-pointer flex items-center gap-2">
+                📜 Petunjuk Permainan
+            </button>
+        </div>
+        
+        <div class="mt-4 text-center z-10 relative bg-gray-900 bg-opacity-50 p-4 rounded-xl border border-cyan-800 backdrop-blur-sm">
+            <p class="text-gray-200 text-sm md:text-base font-medium tracking-wide">Game ini dibuat oleh : <span class="text-cyan-400 font-bold">Dwi Harry Pambudi, M.Pd</span></p>
+            <p class="text-gray-400 text-xs md:text-sm mt-1 font-semibold">Asal Sekolah SMK N 2 Songgom</p>
+        </div>
+    </div>
+
+    <!-- Modal Petunjuk Permainan -->
+    <div id="instructions-screen" class="screen-overlay hidden" style="background: rgba(0,0,0,0.85);">
+        <div class="modal-content bg-gray-900 border-2 border-cyan-500 p-6 md:p-8 rounded-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)] w-11/12 max-w-2xl text-left max-h-[85vh] overflow-y-auto">
+            <h2 class="text-3xl font-bold text-center text-cyan-300 mb-6 border-b border-cyan-500/50 pb-3 title-glow">📜 PETUNJUK PERMAINAN</h2>
+            
+            <div class="space-y-4 text-gray-200 text-sm md:text-base leading-relaxed">
+                <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700">
+                    <h3 class="font-bold text-yellow-400 text-lg mb-1 flex items-center gap-2">🎯 MISI UTAMA</h3>
+                    <p class="text-gray-300">Kendalikan Tank Futuristik untuk mengalahkan pasukan musuh dan menyelamatkan <b>Putri Observasi</b> yang ditawan oleh Dark Commander!</p>
                 </div>
-                <div class="p-6 overflow-y-auto flex-1 text-gray-800 text-lg leading-relaxed">
-                    <h3 class="font-bold text-xl text-blue-700">1. Pengertian</h3>
-                    <p class="mb-4">Teks argumentasi adalah teks yang berisi pendapat atau opini yang didukung oleh fakta, data, dan alasan logis untuk meyakinkan pembaca.</p>
-                    <h3 class="font-bold text-xl text-blue-700">2. Tujuan</h3>
-                    <p class="mb-4">Meyakinkan pembaca agar setuju dengan pandangan penulis serta memengaruhi sikap atau tindakan pembaca.</p>
-                    <h3 class="font-bold text-xl text-blue-700">3. Struktur</h3>
-                    <ul class="list-disc pl-6 mb-4">
-                        <li><strong>Pendahuluan:</strong> Berisi latar belakang masalah dan pernyataan sikap (tesis).</li>
-                        <li><strong>Tubuh Argumen:</strong> Berisi alasan logis, data, dan fakta yang mendukung pendapat.</li>
-                        <li><strong>Penegasan Ulang:</strong> Kesimpulan atau ringkasan argumen.</li>
+                
+                <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700">
+                    <h3 class="font-bold text-cyan-400 text-lg mb-2 flex items-center gap-2">🎮 KONTROL GAME</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-gray-300 text-sm">
+                        <div class="flex items-center gap-2"><span>⬅️ / ➡️</span> : Bergerak Kiri & Kanan</div>
+                        <div class="flex items-center gap-2"><span>⬆️ / ⬇️</span> : Arahkan Sudut Meriam</div>
+                        <div class="flex items-center gap-2"><span>💥 TEMBAK</span> : Peluru Energi (Spasi)</div>
+                        <div class="flex items-center gap-2"><span>🔥 BOM</span> : Serangan Area (Tombol B)</div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/80 p-4 rounded-xl border border-gray-700">
+                    <h3 class="font-bold text-green-400 text-lg mb-1 flex items-center gap-2">📚 KUIS TEKS LHO</h3>
+                    <p class="text-gray-300">Setiap menghancurkan musuh, Anda akan mendapatkan kuis seputar <b>Teks Laporan Hasil Observasi (LHO)</b>.</p>
+                    <ul class="list-disc list-inside mt-2 space-y-1 text-gray-300 text-sm">
+                        <li><b class="text-green-400">Jawaban Benar:</b> Menambah skor & memulihkan energi tank.</li>
+                        <li><b class="text-red-400">Jawaban Salah:</b> Mengurangi skor & mengurangi HP tank.</li>
                     </ul>
-                    <h3 class="font-bold text-xl text-blue-700">4. Ciri-ciri & Fakta vs Opini</h3>
-                    <p class="mb-4">Bersifat objektif, logis, menggunakan bahasa baku. Menggunakan kalimat <strong>Fakta</strong> (dapat dibuktikan kebenarannya, misal: "Indonesia merdeka tahun 1945") untuk mendukung <strong>Opini</strong> (pendapat/pandangan pribadi, misal: "Pendidikan adalah hal paling penting").</p>
                 </div>
             </div>
-        </div>
 
-        <!-- HUD (Heads Up Display) -->
-        <div id="hud" class="hidden absolute top-0 left-0 w-full p-4 flex justify-between items-start pointer-events-none">
-            <div class="flex flex-col gap-2">
-                <div class="hud-text flex items-center gap-2" id="hud-lives">❤️❤️❤️</div>
-                <div class="hud-text text-xl" id="hud-level">Level: 1</div>
-            </div>
-            <div class="hud-text text-4xl text-yellow-300" id="hud-msg" style="opacity:0; transition: opacity 0.5s;">+100</div>
-            <div class="flex flex-col gap-2 text-right">
-                <div class="hud-text text-yellow-400 flex justify-end items-center gap-2" id="hud-score">0 ⭐</div>
-                <div class="hud-text text-gray-200 flex justify-end items-center gap-2" id="hud-coins">0 🪙</div>
-            </div>
+            <button onclick="hideInstructions()" class="w-full mt-6 btn-neon text-white font-bold py-3 rounded-lg text-lg uppercase tracking-wider cursor-pointer">
+                ✅ Mengerti & Kembali
+            </button>
         </div>
-        
-        <!-- Mobile Controls -->
-        <div id="mobile-controls" class="hidden interactive absolute bottom-4 left-0 w-full px-6 flex justify-between items-end opacity-60">
-            <div class="flex gap-4">
-                <button id="btn-left" class="w-16 h-16 bg-white/30 rounded-full border-2 border-white text-3xl flex items-center justify-center text-white active:bg-white/60">◀</button>
-                <button id="btn-right" class="w-16 h-16 bg-white/30 rounded-full border-2 border-white text-3xl flex items-center justify-center text-white active:bg-white/60">▶</button>
-            </div>
-            <div>
-                <button id="btn-jump" class="w-20 h-20 bg-blue-500/50 rounded-full border-2 border-white text-4xl flex items-center justify-center text-white active:bg-blue-500/90 shadow-lg mb-2">▲</button>
-            </div>
-        </div>
+    </div>
 
-        <!-- Quiz / Mini Game Overlay -->
-        <div id="quiz-overlay" class="interactive hidden absolute inset-0 bg-black/80 flex items-center justify-center p-4">
-            <div class="glass-panel w-full max-w-2xl p-6 pop-in text-center">
-                <h2 id="quiz-title" class="text-3xl font-extrabold text-blue-700 mb-2">Tantangan!</h2>
-                <p id="quiz-question" class="text-xl text-gray-800 mb-6 font-semibold">Pertanyaan muncul di sini...</p>
-                
-                <!-- Options Container -->
-                <div id="quiz-options" class="flex flex-col gap-3">
-                    <!-- Buttons injected via JS -->
+    <div id="form-screen" class="screen-overlay hidden">
+        <div class="modal-content bg-gray-900 border-2 border-cyan-500 p-8 rounded-2xl shadow-[0_0_30px_rgba(0,255,255,0.3)] w-11/12 max-w-md">
+            <h2 class="text-3xl font-bold text-center text-white mb-6">DATA KOMANDAN</h2>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-cyan-400 text-sm font-bold mb-2">👤 Nama Peserta</label>
+                    <input type="text" id="playerName" class="w-full p-3 rounded bg-gray-800 text-white border border-gray-600 focus:border-cyan-500 focus:outline-none" placeholder="Masukkan Nama..." required>
                 </div>
-                
-                <!-- Custom Mini Game Container (e.g. Sort) -->
-                <div id="minigame-container" class="hidden flex flex-col gap-2 mb-4">
-                    <!-- Injected via JS -->
+                <div>
+                    <label class="block text-cyan-400 text-sm font-bold mb-2">🏫 Kelas</label>
+                    <input type="text" id="playerClass" class="w-full p-3 rounded bg-gray-800 text-white border border-gray-600 focus:border-cyan-500 focus:outline-none" placeholder="Contoh: X IPA 1" required>
                 </div>
-                
-                <p id="quiz-feedback" class="mt-4 text-xl font-bold hidden"></p>
+                <div>
+                    <label class="block text-cyan-400 text-sm font-bold mb-2">🏢 Asal Sekolah</label>
+                    <input type="text" id="playerSchool" class="w-full p-3 rounded bg-gray-800 text-white border border-gray-600 focus:border-cyan-500 focus:outline-none" placeholder="Masukkan Sekolah..." required>
+                </div>
+                <button onclick="startGame()" class="w-full mt-6 btn-neon text-white font-bold py-3 rounded-lg text-xl">
+                    🚀 MULAI MISI
+                </button>
             </div>
         </div>
+    </div>
 
-        <!-- Game Over / Win Screen -->
-        <div id="result-screen" class="interactive hidden absolute inset-0 bg-black/90 flex flex-col items-center justify-center p-4">
-            <div id="certificate" class="hidden certificate-bg w-full max-w-3xl p-10 text-center flex flex-col items-center pop-in mb-6 relative">
-                <div class="absolute top-0 left-0 w-full h-full pointer-events-none" style="background: radial-gradient(circle, transparent 20%, #fffbed 120%);"></div>
-                <div class="text-6xl mb-4 relative z-10">🏆</div>
-                <h1 class="text-4xl md:text-5xl font-extrabold text-blue-900 mb-2 relative z-10 uppercase font-serif">Sertifikat Penghargaan</h1>
-                <h2 class="text-2xl text-gray-700 mb-6 relative z-10">Diberikan Kepada: Ahli Teks Argumentasi</h2>
-                <p class="text-lg text-gray-800 mb-4 relative z-10 font-medium">Telah berhasil menyelesaikan Argumenta Quest dan membuktikan pemahaman luar biasa dalam menyusun fakta dan opini.</p>
-                <div class="text-5xl font-bold text-green-600 mt-2 relative z-10" id="cert-score">Nilai: 100</div>
-                <div class="mt-8 border-t-2 border-gray-400 pt-2 relative z-10 w-48 text-gray-600 font-bold">Instruktur Literasi</div>
+    <div id="quiz-screen" class="screen-overlay hidden" style="background: rgba(0,0,0,0.9);">
+        <div class="modal-content bg-gray-800 border-t-4 border-cyan-500 p-6 md:p-10 rounded-xl shadow-2xl w-11/12 max-w-3xl">
+            <div class="flex justify-between items-center mb-4">
+                <span class="bg-cyan-900 text-cyan-300 py-1 px-3 rounded-full text-xs font-bold uppercase tracking-wider" id="quiz-category">Materi</span>
+                <span class="text-yellow-400 font-bold">Waktu: <span id="quiz-timer">30</span>s</span>
             </div>
+            <h3 id="quiz-question" class="text-xl md:text-2xl text-white font-semibold mb-8 leading-relaxed">Pertanyaan akan muncul di sini...</h3>
+            <div id="quiz-options" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Options injected by JS -->
+            </div>
+            <div id="quiz-feedback" class="mt-6 text-center text-xl font-bold hidden"></div>
+        </div>
+    </div>
+
+    <div id="result-screen" class="screen-overlay hidden">
+        <div class="modal-content bg-gray-900 border-4 border-yellow-500 p-8 rounded-2xl shadow-[0_0_50px_rgba(255,215,0,0.4)] w-11/12 max-w-lg text-center">
+            <h1 class="text-4xl font-black text-yellow-400 mb-2" id="result-title">🏆 HASIL MISI</h1>
+            <p class="text-gray-300 mb-6" id="result-subtitle">Misi Selesai Komandan!</p>
             
-            <div id="game-over-content" class="text-center pop-in">
-                <h1 id="result-title" class="text-6xl font-bold text-white mb-4">Game Over</h1>
-                <p id="result-desc" class="text-2xl text-gray-300 mb-8">Jangan menyerah! Ayo belajar lagi.</p>
-                <div class="flex gap-4 justify-center">
-                    <button onclick="GameUI.returnToMenu()" class="btn">🏠 Menu Utama</button>
-                    <button onclick="GameUI.startGame()" class="btn btn-green">🔄 Main Lagi</button>
-                </div>
+            <div class="bg-gray-800 rounded-lg p-4 text-left space-y-2 mb-6">
+                <p class="text-gray-400">Nama: <span id="res-name" class="text-white font-bold"></span></p>
+                <p class="text-gray-400">Kelas: <span id="res-class" class="text-white font-bold"></span></p>
+                <p class="text-gray-400">Sekolah: <span id="res-school" class="text-white font-bold"></span></p>
+                <hr class="border-gray-600 my-2">
+                <p class="text-gray-400">Total Skor: <span id="res-score" class="text-cyan-400 font-black text-xl"></span></p>
+                <p class="text-gray-400">Jawaban Benar: <span id="res-correct" class="text-green-400 font-bold"></span></p>
+                <p class="text-gray-400">Jawaban Salah: <span id="res-wrong" class="text-red-400 font-bold"></span></p>
+                <p class="text-gray-400">Level Terakhir: <span id="res-level" class="text-white font-bold"></span></p>
             </div>
-        </div>
 
+            <button onclick="downloadExcel()" class="bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-6 rounded-lg w-full mb-3 flex justify-center items-center gap-2 transition">
+                📥 Download Rekap Nilai (CSV)
+            </button>
+            <button onclick="location.reload()" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg w-full transition">
+                Main Lagi
+            </button>
+        </div>
     </div>
 
     <script>
-        // Sfx Synthesizer (No external sound files needed)
-        class AudioSynth {
-            constructor() {
-                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                this.enabled = true;
-            }
-            playTone(freq, type, duration, vol=0.1) {
-                if(!this.enabled || this.ctx.state === 'suspended') return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = type; osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
-                osc.connect(gain); gain.connect(this.ctx.destination);
-                osc.start(); osc.stop(this.ctx.currentTime + duration);
-            }
-            jump() { this.playTone(300, 'sine', 0.2, 0.2); setTimeout(()=>this.playTone(500, 'sine', 0.2, 0.2), 50); }
-            coin() { this.playTone(800, 'sine', 0.1, 0.1); setTimeout(()=>this.playTone(1200, 'sine', 0.2, 0.1), 50); }
-            correct() { 
-                this.playTone(440, 'triangle', 0.1); 
-                setTimeout(()=>this.playTone(554, 'triangle', 0.1), 100); 
-                setTimeout(()=>this.playTone(659, 'triangle', 0.3), 200); 
-            }
-            wrong() { this.playTone(200, 'sawtooth', 0.3, 0.2); setTimeout(()=>this.playTone(150, 'sawtooth', 0.4, 0.2), 150); }
-            hurt() { this.playTone(100, 'square', 0.3, 0.3); }
-            win() {
-                [523, 659, 783, 1046].forEach((f, i) => {
-                    setTimeout(() => this.playTone(f, 'square', 0.3, 0.1), i * 150);
-                });
-            }
-            bossHit() { this.playTone(150, 'sawtooth', 0.5, 0.4); }
-            resume() { if(this.ctx.state === 'suspended') this.ctx.resume(); }
-        }
-        const sfx = new AudioSynth();
+        const bgImage = new Image();
+        bgImage.src = 'https://i.imgur.com/BPmeyOQ.png';
+        let bgImageLoaded = false;
+        bgImage.onload = () => { bgImageLoaded = true; };
+        bgImage.onerror = () => { bgImageLoaded = false; };
 
-        // Global Game State
-        const GameState = {
-            lives: 3, score: 0, coins: 0, level: 1, maxLevel: 5, phaserGame: null,
-            reset() { this.lives = 3; this.score = 0; this.coins = 0; this.level = 1; }
-        };
+        // Background Music Configuration (Level 1-4)
+        const bgMusic = new Audio('https://github.com/dwipambudi53-ui/GAME_TANK_OBSERVATION/raw/refs/heads/main/Original%20Tetris%20theme%20(Tetris%20Soundtrack).mp3');
+        bgMusic.loop = true;
+        bgMusic.volume = 0.3;
 
-        // Quiz Database based on Teks Argumentasi
-        const QuizData = {
-            1: [ // Level 1: Pengertian
-                { q: "Yang dimaksud teks argumentasi adalah....", options: ["Teks yang berisi cerita fiksi.", "Teks yang berisi pendapat disertai fakta logis.", "Teks panduan melakukan sesuatu.", "Teks laporan hasil observasi."], ans: 1 },
-                { q: "Tujuan utama teks argumentasi adalah...", options: ["Menghibur pembaca.", "Mendeskripsikan pemandangan.", "Meyakinkan pembaca akan suatu pendapat.", "Menceritakan pengalaman pribadi."], ans: 2 }
-            ],
-            2: [ // Level 2: Struktur
-                { q: "Struktur teks argumentasi yang benar adalah...", options: ["Pendahuluan - Tubuh Argumen - Penegasan Ulang", "Orientasi - Komplikasi - Resolusi", "Tesis - Argumentasi - Reorientasi", "Pernyataan Umum - Deskripsi Bagian"], ans: 0 },
-                { q: "Bagian yang berisi alasan, fakta, dan data disebut...", options: ["Pendahuluan", "Tubuh Argumen", "Penegasan Ulang", "Abstrak"], ans: 1 }
-            ],
-            3: [ // Level 3: Ciri
-                { q: "Teks argumentasi yang baik harus bersifat...", options: ["Subjektif dan emosional", "Objektif dan logis", "Berdasarkan imajinasi", "Singkat dan tidak jelas"], ans: 1 },
-                { q: "Apa peran data/fakta dalam teks argumentasi?", options: ["Sebagai hiasan agar teks panjang.", "Untuk memperkuat pendapat penulis.", "Hanya pelengkap yang tidak wajib.", "Untuk membingungkan pembaca."], ans: 1 }
-            ],
-            4: [ // Level 4: Fakta vs Opini
-                { q: "Manakah yang merupakan kalimat FAKTA?", options: ["Belajar itu sangat melelahkan.", "Gunung Semeru terletak di Jawa Timur.", "Cuaca hari ini terasa sangat indah.", "Film tersebut tidak layak ditonton."], ans: 1 },
-                { q: "Manakah yang merupakan kalimat OPINI?", options: ["Air mendidih pada suhu 100 derajat Celcius.", "Matahari terbit dari timur.", "Membaca buku lebih menyenangkan daripada bermain game.", "Indonesia merdeka pada tahun 1945."], ans: 2 }
-            ],
-            boss: [ // Level 5: Boss (Campuran)
-                { q: "Apa itu Teks Argumentasi?", options: ["Cerita", "Pendapat+Bukti", "Prosedur"], ans: 1 },
-                { q: "Struktur awal argumen?", options: ["Pendahuluan", "Isi", "Penutup"], ans: 0 },
-                { q: "Fakta bersifat?", options: ["Objektif", "Subjektif", "Relatif"], ans: 0 },
-                { q: "Opini bersifat?", options: ["Pasti", "Subjektif", "Terukur"], ans: 1 }
-                // Boss fight will loop these rapidly
-            ]
-        };
+        // Level 5 Final Boss Soundtrack
+        const bossMusic = new Audio('https://github.com/dwipambudi53-ui/GAME_TANK_OBSERVATION/raw/refs/heads/main/SOUND%20GAME.MP3');
+        bossMusic.loop = true;
+        bossMusic.volume = 0.4;
 
-        // UI Controller
-        const GameUI = {
-            show(id) { document.getElementById(id).classList.remove('hidden'); },
-            hide(id) { document.getElementById(id).classList.add('hidden'); },
-            
-            showMaterial() { this.hide('main-menu'); this.show('material-menu'); },
-            hideMaterial() { this.hide('material-menu'); this.show('main-menu'); },
-            showScores() { alert("Skor Tertinggi Lokal: \n" + (localStorage.getItem('argQuestScore') || 'Belum ada data')); },
-            
-            startGame() {
-                sfx.resume();
-                this.hide('main-menu'); this.hide('result-screen');
-                this.show('hud'); 
-                if(window.innerWidth < 1024) this.show('mobile-controls');
-                
-                GameState.reset();
-                this.updateHUD();
-                
-                if (GameState.phaserGame) {
-                    GameState.phaserGame.destroy(true);
-                    document.getElementById('game-container').innerHTML = '';
-                }
-                initPhaser();
-            },
-            
-            updateHUD() {
-                document.getElementById('hud-lives').innerText = '❤️'.repeat(GameState.lives);
-                document.getElementById('hud-score').innerText = `${GameState.score} ⭐`;
-                document.getElementById('hud-coins').innerText = `${GameState.coins} 🪙`;
-                document.getElementById('hud-level').innerText = `Level: ${GameState.level}`;
-            },
+        let currentTrack = bgMusic;
+        let isMuted = false;
 
-            showFloatingText(text, isGood=true) {
-                const el = document.getElementById('hud-msg');
-                el.innerText = text;
-                el.className = `hud-text text-4xl ${isGood ? 'text-green-400' : 'text-red-500'} pop-in`;
-                el.style.opacity = 1;
-                setTimeout(() => { el.style.opacity = 0; }, 1000);
-            },
-            
-            triggerQuiz(level, callback) {
-                const scene = GameState.phaserGame.scene.scenes.find(s => s.scene.isActive());
-                if(scene) scene.scene.pause();
-                
-                this.show('quiz-overlay');
-                const qData = (level === 'boss') ? 
-                    QuizData.boss[Math.floor(Math.random() * QuizData.boss.length)] : 
-                    QuizData[level][Math.floor(Math.random() * QuizData[level].length)];
-                
-                document.getElementById('quiz-question').innerText = qData.q;
-                const optionsContainer = document.getElementById('quiz-options');
-                optionsContainer.innerHTML = '';
-                
-                qData.options.forEach((opt, index) => {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn text-lg py-3 hover:scale-105';
-                    btn.innerText = opt;
-                    btn.onclick = () => this.handleQuizAnswer(index === qData.ans, callback, scene);
-                    optionsContainer.appendChild(btn);
-                });
-            },
-            
-            handleQuizAnswer(isCorrect, callback, scene) {
-                const feedback = document.getElementById('quiz-feedback');
-                feedback.classList.remove('hidden');
-                
-                if (isCorrect) {
-                    sfx.correct();
-                    feedback.innerText = "Benar! +100 Poin";
-                    feedback.className = "mt-4 text-2xl font-bold text-green-500 pop-in";
-                    GameState.score += 100;
-                    this.updateHUD();
-                    this.showFloatingText('+100');
-                    setTimeout(() => {
-                        this.hide('quiz-overlay');
-                        feedback.classList.add('hidden');
-                        if(scene) scene.scene.resume();
-                        if(callback) callback(true);
-                    }, 1000);
-                } else {
-                    sfx.wrong();
-                    feedback.innerText = "Salah! Nyawa berkurang.";
-                    feedback.className = "mt-4 text-2xl font-bold text-red-500 pop-in";
-                    GameState.lives -= 1;
-                    this.updateHUD();
-                    
-                    if (GameState.lives <= 0) {
-                        setTimeout(() => {
-                            this.hide('quiz-overlay');
-                            this.gameOver(false);
-                        }, 1000);
-                    } else {
-                        setTimeout(() => {
-                            this.hide('quiz-overlay');
-                            feedback.classList.add('hidden');
-                            if(scene) scene.scene.resume();
-                            if(callback) callback(false); // Let boss battle handle wrong answer
-                        }, 1000);
-                    }
-                }
-            },
-            
-            gameOver(isWin) {
-                if(GameState.phaserGame) GameState.phaserGame.scene.scenes.forEach(s => s.scene.pause());
-                this.hide('hud'); this.hide('mobile-controls'); this.show('result-screen');
-                
-                const highscore = Math.max(GameState.score, parseInt(localStorage.getItem('argQuestScore')||0));
-                localStorage.setItem('argQuestScore', highscore);
-                
-                if (isWin) {
-                    sfx.win();
-                    if (GameState.score >= 500) { // Require decent score for certificate
-                        this.hide('game-over-content');
-                        this.show('certificate');
-                        document.getElementById('cert-score').innerText = `Nilai: ${GameState.score}`;
-                    } else {
-                        this.hide('certificate');
-                        this.show('game-over-content');
-                        document.getElementById('result-title').innerText = "Menang!";
-                        document.getElementById('result-title').className = "text-6xl font-bold text-green-400 mb-4";
-                        document.getElementById('result-desc').innerText = `Skor kamu: ${GameState.score}. Belajar lagi untuk dapat Sertifikat (Min 500)!`;
-                    }
-                } else {
-                    this.hide('certificate');
-                    this.show('game-over-content');
-                    document.getElementById('result-title').innerText = "Game Over";
-                    document.getElementById('result-title').className = "text-6xl font-bold text-red-500 mb-4";
-                    document.getElementById('result-desc').innerText = `Skor akhir: ${GameState.score}. Fakta berhasil dicuri Hoaks!`;
-                }
-            },
-
-            returnToMenu() {
-                this.hide('result-screen');
-                this.show('main-menu');
-                if (GameState.phaserGame) {
-                    GameState.phaserGame.destroy(true);
-                    GameState.phaserGame = null;
-                }
-            }
-        };
-
-        // Phaser Implementation
-        class BootScene extends Phaser.Scene {
-            constructor() { super('BootScene'); }
-            
-            create() {
-                // Generate Textures procedurally to avoid external loading
-                const g = this.add.graphics();
-                
-                // Platform Texture (Green Top, Brown Bottom)
-                g.fillStyle(0x4ade80, 1); g.fillRoundedRect(0, 0, 100, 32, {tl: 8, tr: 8, bl: 0, br: 0});
-                g.fillStyle(0x78350f, 1); g.fillRect(0, 32, 100, 32);
-                g.generateTexture('platform', 100, 64); g.clear();
-                
-                // Small Platform
-                g.fillStyle(0x4ade80, 1); g.fillRoundedRect(0, 0, 64, 32, 8);
-                g.generateTexture('platform_small', 64, 32); g.clear();
-
-                // Menggambar karakter siswa utuh (Full Body)
-                this.generateFullBodyPlayer('player');
-                
-                // Enemy (Hoaks)
-                this.generateEmojiTexture('enemy', '👾', '56px');
-                
-                // Collectibles
-                this.generateEmojiTexture('coin', '🪙', '40px');
-                this.generateEmojiTexture('fact', '📊', '40px');
-                this.generateEmojiTexture('book', '📚', '40px');
-                
-                // Door / Checkpoint
-                this.generateEmojiTexture('door', '🚪', '80px');
-                
-                // Boss
-                this.generateEmojiTexture('boss', '👹', '120px');
-
-                this.scene.start('PlayScene');
-            }
-
-            generateEmojiTexture(key, emoji, size) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 128; canvas.height = 128;
-                const ctx = canvas.getContext('2d');
-                ctx.font = `${size} Arial`;
-                ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                // Draw shadow for better visibility
-                ctx.shadowColor = 'rgba(0,0,0,0.5)'; ctx.shadowBlur = 4;
-                ctx.fillText(emoji, 64, 64);
-                this.textures.addCanvas(key, canvas);
-            }
-
-            generateFullBodyPlayer(key) {
-                const canvas = document.createElement('canvas');
-                canvas.width = 80;
-                canvas.height = 120;
-                const ctx = canvas.getContext('2d');
-
-                // Ransel (Backpack) - Biru
-                ctx.fillStyle = '#3b82f6';
-                ctx.fillRect(10, 35, 24, 38);
-                
-                // Lengan Belakang (Kiri)
-                ctx.fillStyle = '#f3f4f6'; // Lengan baju
-                ctx.fillRect(40, 42, 12, 16);
-                ctx.fillStyle = '#ffcc99'; // Kulit tangan
-                ctx.fillRect(42, 58, 8, 16);
-
-                // Badan (Kemeja Putih)
-                ctx.fillStyle = '#f3f4f6';
-                ctx.fillRect(28, 40, 30, 36);
-                
-                // Dasi - Merah
-                ctx.fillStyle = '#ef4444';
-                ctx.fillRect(46, 40, 6, 20);
-
-                // Leher
-                ctx.fillStyle = '#ffcc99';
-                ctx.fillRect(40, 34, 8, 8);
-
-                // Kepala - Warna Kulit
-                ctx.fillStyle = '#ffcc99'; 
-                ctx.beginPath();
-                ctx.arc(44, 22, 18, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Rambut - Hitam/Abu Gelap
-                ctx.fillStyle = '#1f2937'; 
-                ctx.beginPath();
-                ctx.arc(44, 18, 19, Math.PI, 0);
-                ctx.fill();
-                ctx.fillRect(25, 18, 8, 14); 
-
-                // Kacamata (Menghadap Kanan)
-                ctx.fillStyle = '#111827';
-                ctx.fillRect(50, 14, 12, 8); // Lensa
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(52, 16, 4, 4);  // Pantulan Cahaya Lensa
-                ctx.fillStyle = '#111827';
-                ctx.fillRect(40, 16, 10, 2); // Tangkai kacamata
-
-                // Celana / Kaki - Abu-abu gelap
-                ctx.fillStyle = '#4b5563'; 
-                ctx.fillRect(30, 76, 12, 28); // Kaki Belakang
-                ctx.fillRect(46, 76, 12, 28); // Kaki Depan
-
-                // Sepatu Hitam
-                ctx.fillStyle = '#111827';
-                ctx.fillRect(26, 104, 16, 12);
-                ctx.fillRect(46, 104, 20, 12); // Sepatu depan lebih mancung
-
-                // Lengan Depan (Kanan)
-                ctx.fillStyle = '#f3f4f6'; // Lengan baju
-                ctx.fillRect(34, 42, 14, 16);
-                ctx.fillStyle = '#ffcc99'; // Kulit tangan
-                ctx.fillRect(36, 58, 8, 16);
-
-                this.textures.addCanvas(key, canvas);
+        function playBGM() {
+            if (!isMuted && currentTrack.paused) {
+                currentTrack.play().catch(err => console.log("Autoplay blocked by browser:", err));
             }
         }
 
-        class PlayScene extends Phaser.Scene {
-            constructor() { super('PlayScene'); }
-
-            create() {
-                this.isBossLevel = GameState.level === GameState.maxLevel;
-                
-                // Dynamic Sky Background based on level
-                const colors = [0x38bdf8, 0x818cf8, 0xa78bfa, 0xf472b6, 0xf87171];
-                this.cameras.main.setBackgroundColor(colors[GameState.level - 1]);
-                
-                // Add Parallax Clouds (Generated shapes)
-                this.clouds = [];
-                for(let i=0; i<10; i++) {
-                    let cloud = this.add.circle(Phaser.Math.Between(0, 3000), Phaser.Math.Between(50, 300), Phaser.Math.Between(30, 80), 0xffffff, 0.8);
-                    cloud.setScrollFactor(0.2);
-                    this.clouds.push(cloud);
+        function switchTrack(newTrack) {
+            if (currentTrack !== newTrack) {
+                currentTrack.pause();
+                currentTrack.currentTime = 0;
+                currentTrack = newTrack;
+                if (!isMuted) {
+                    currentTrack.play().catch(err => console.log("Playback failed:", err));
                 }
-
-                // Physics Groups
-                this.platforms = this.physics.add.staticGroup();
-                this.coins = this.physics.add.group({ allowGravity: false });
-                this.facts = this.physics.add.group({ allowGravity: false });
-                this.enemies = this.physics.add.group();
-                
-                // Level Generation
-                this.levelLength = this.isBossLevel ? 800 : 3000;
-                this.generateLevel(this.isBossLevel);
-
-                // Player Setup
-                this.player = this.physics.add.sprite(100, 300, 'player');
-                this.player.setScale(0.85); // Menyesuaikan ukuran proporsi karakter
-                this.player.setBounce(0.1);
-                this.player.setCollideWorldBounds(true);
-                
-                // Menyesuaikan hitbox collision untuk karakter berdiri utuh
-                this.player.body.setSize(40, 110); 
-                this.player.body.setOffset(20, 10); 
-                
-                // World Bounds
-                this.physics.world.setBounds(0, 0, this.levelLength, this.scale.height);
-                this.cameras.main.setBounds(0, 0, this.levelLength, this.scale.height);
-                this.cameras.main.startFollow(this.player, true, 0.05, 0.05);
-
-                // Collisions
-                this.physics.add.collider(this.player, this.platforms);
-                this.physics.add.collider(this.enemies, this.platforms);
-                
-                this.physics.add.overlap(this.player, this.coins, this.collectCoin, null, this);
-                this.physics.add.overlap(this.player, this.facts, this.collectFact, null, this);
-                this.physics.add.overlap(this.player, this.enemies, this.hitEnemy, null, this);
-
-                if (!this.isBossLevel) {
-                    this.door = this.physics.add.staticSprite(this.levelLength - 100, this.scale.height - 150, 'door');
-                    this.physics.add.overlap(this.player, this.door, this.reachDoor, null, this);
-                } else {
-                    this.boss = this.physics.add.sprite(this.levelLength - 200, this.scale.height - 200, 'boss');
-                    this.boss.setImmovable(true);
-                    this.boss.body.allowGravity = false;
-                    this.physics.add.collider(this.player, this.boss, this.hitBoss, null, this);
-                    this.bossHp = 3; // Need 3 correct answers to beat boss
-                    
-                    // Boss float animation
-                    this.tweens.add({
-                        targets: this.boss, y: '-=30', duration: 1000, yoyo: true, repeat: -1, ease: 'Sine.easeInOut'
-                    });
-                }
-
-                // Controls (Keyboard)
-                this.cursors = this.input.keyboard.createCursorKeys();
-                this.wasd = this.input.keyboard.addKeys('W,A,S,D,SPACE');
-                
-                // Mobile Controls Binding
-                this.bindMobileControls();
-                this.mobileLeft = false; this.mobileRight = false; this.mobileJump = false;
-
-                // Death plane
-                this.deathPlane = this.scale.height - 20;
-            }
-
-            generateLevel(isBoss) {
-                const h = this.scale.height;
-                const groundY = h - 64;
-                
-                // Start Platform
-                this.platforms.create(150, groundY, 'platform').setScale(3, 1).refreshBody();
-
-                if (isBoss) {
-                    // Boss arena
-                    this.platforms.create(400, groundY, 'platform').setScale(10, 1).refreshBody();
-                    return;
-                }
-
-                let curX = 400;
-                while (curX < this.levelLength - 400) {
-                    let gap = Phaser.Math.Between(50, 150);
-                    curX += gap;
-                    
-                    let yPos = groundY - Phaser.Math.Between(0, 3) * 60; // Vary height
-                    
-                    // Main platform
-                    let plat = this.platforms.create(curX, yPos, 'platform');
-                    plat.setScale(Phaser.Math.Between(1, 3), 1).refreshBody();
-                    
-                    // Add items or enemies randomly
-                    let rnd = Phaser.Math.Between(0, 100);
-                    if (rnd < 40) {
-                        // Coin
-                        let coin = this.coins.create(curX, yPos - 80, 'coin');
-                        this.tweens.add({ targets: coin, y: '-=10', duration: 800, yoyo: true, repeat: -1 });
-                    } else if (rnd < 70) {
-                        // Enemy
-                        let enemy = this.enemies.create(curX, yPos - 60, 'enemy');
-                        enemy.setVelocityX(Phaser.Math.Between(30, 80) * (Math.random() < 0.5 ? 1 : -1));
-                        enemy.setCollideWorldBounds(true);
-                        enemy.setBounceX(1);
-                    } else if (rnd < 90) {
-                        // Fact / Data (Bonus score)
-                        let fact = this.facts.create(curX, yPos - 120, Math.random()>0.5?'fact':'book');
-                        this.tweens.add({ targets: fact, scale: 1.2, duration: 500, yoyo: true, repeat: -1 });
-                    }
-                    
-                    curX += plat.width * plat.scaleX;
-                }
-                
-                // End Platform
-                this.platforms.create(this.levelLength - 150, groundY, 'platform').setScale(4, 1).refreshBody();
-            }
-
-            bindMobileControls() {
-                const btnL = document.getElementById('btn-left');
-                const btnR = document.getElementById('btn-right');
-                const btnJ = document.getElementById('btn-jump');
-                
-                const addEv = (el, type, val, prop) => {
-                    el.addEventListener(type, (e) => { e.preventDefault(); this[prop] = val; }, {passive: false});
-                };
-                addEv(btnL, 'touchstart', true, 'mobileLeft'); addEv(btnL, 'touchend', false, 'mobileLeft');
-                addEv(btnR, 'touchstart', true, 'mobileRight'); addEv(btnR, 'touchend', false, 'mobileRight');
-                addEv(btnJ, 'touchstart', true, 'mobileJump'); addEv(btnJ, 'touchend', false, 'mobileJump');
-            }
-
-            update() {
-                if (!this.player.active) return;
-
-                // Move Clouds
-                this.clouds.forEach(c => { c.x -= 0.1; if(c.x < -100) c.x = this.levelLength + 100; });
-
-                // Horizontal Movement
-                if (this.cursors.left.isDown || this.wasd.A.isDown || this.mobileLeft) {
-                    this.player.setVelocityX(-250);
-                    this.player.flipX = true;
-                } else if (this.cursors.right.isDown || this.wasd.D.isDown || this.mobileRight) {
-                    this.player.setVelocityX(250);
-                    this.player.flipX = false;
-                } else {
-                    this.player.setVelocityX(0);
-                }
-
-                // Jumping
-                const onGround = this.player.body.touching.down || this.player.body.blocked.down;
-                if ((this.cursors.up.isDown || this.wasd.W.isDown || this.wasd.SPACE.isDown || this.mobileJump) && onGround) {
-                    this.player.setVelocityY(-550);
-                    sfx.jump();
-                    // Reset jump flag to prevent hold-jumping
-                    this.mobileJump = false; 
-                }
-
-                // Fall into gap
-                if (this.player.y > this.deathPlane) {
-                    this.handleDeath();
-                }
-            }
-
-            collectCoin(player, coin) {
-                coin.destroy();
-                sfx.coin();
-                GameState.coins += 1;
-                GameState.score += 10;
-                GameUI.updateHUD();
-                GameUI.showFloatingText('+10', true);
-            }
-
-            collectFact(player, fact) {
-                fact.destroy();
-                sfx.coin();
-                GameState.score += 50;
-                GameUI.updateHUD();
-                GameUI.showFloatingText('Fakta!\n+50', true);
-            }
-
-            hitEnemy(player, enemy) {
-                // Jump on enemy
-                if (player.body.velocity.y > 0 && player.y < enemy.y - 20) {
-                    enemy.destroy();
-                    sfx.bossHit();
-                    player.setVelocityY(-300);
-                    GameState.score += 20;
-                    GameUI.updateHUD();
-                } else {
-                    this.handleDeath();
-                }
-            }
-
-            handleDeath() {
-                if(!this.player.active) return;
-                sfx.hurt();
-                GameState.lives -= 1;
-                GameUI.updateHUD();
-                
-                this.player.setTint(0xff0000);
-                this.player.setActive(false);
-                this.physics.pause();
-
-                if (GameState.lives <= 0) {
-                    setTimeout(() => GameUI.gameOver(false), 1000);
-                } else {
-                    // Respawn
-                    setTimeout(() => {
-                        this.player.setActive(true);
-                        this.player.clearTint();
-                        this.player.setPosition(100, 300);
-                        this.physics.resume();
-                    }, 1000);
-                }
-            }
-
-            reachDoor(player, door) {
-                if(this.doorLocked) return;
-                this.doorLocked = true; // prevent multiple triggers
-                this.player.setVelocityX(0);
-                
-                GameUI.triggerQuiz(GameState.level, (correct) => {
-                    if(correct) {
-                        GameState.level++;
-                        GameUI.updateHUD();
-                        if (GameState.level > GameState.maxLevel) {
-                            GameUI.gameOver(true); // Should not happen here normally due to boss logic
-                        } else {
-                            this.scene.restart(); // Load next level map
-                        }
-                    } else {
-                        this.doorLocked = false;
-                        // Player respawns via handleQuizAnswer logic if lives > 0
-                    }
-                });
-            }
-
-            hitBoss(player, boss) {
-                if(this.bossLocked) return;
-                this.bossLocked = true;
-                
-                // Bounce player back
-                player.setVelocityX(-300);
-                player.setVelocityY(-200);
-
-                // Boss question
-                GameUI.triggerQuiz('boss', (correct) => {
-                    if (correct) {
-                        this.bossHp--;
-                        sfx.bossHit();
-                        boss.setTint(0xff0000);
-                        setTimeout(() => boss.clearTint(), 200);
-                        
-                        if (this.bossHp <= 0) {
-                            boss.destroy();
-                            // Spawn giant star/fakta
-                            let winItem = this.physics.add.sprite(boss.x, boss.y, 'fact').setScale(2);
-                            winItem.body.allowGravity = false;
-                            this.physics.add.overlap(this.player, winItem, () => {
-                                GameState.score += 500;
-                                GameUI.gameOver(true); // Win!
-                            });
-                        } else {
-                            this.bossLocked = false;
-                        }
-                    } else {
-                        this.bossLocked = false;
-                        // Wrong answer penalty handled by UI (lives -1)
-                    }
-                });
             }
         }
 
-        function initPhaser() {
-            const config = {
-                type: Phaser.AUTO,
-                width: window.innerWidth,
-                height: window.innerHeight,
-                parent: 'game-container',
-                transparent: true,
-                physics: {
-                    default: 'arcade',
-                    arcade: { gravity: { y: 1000 }, debug: false }
-                },
-                scale: {
-                    mode: Phaser.Scale.RESIZE,
-                    autoCenter: Phaser.Scale.CENTER_BOTH
-                },
-                scene: [BootScene, PlayScene]
-            };
-            GameState.phaserGame = new Phaser.Game(config);
+        function toggleBGM() {
+            isMuted = !isMuted;
+            const btnText = document.getElementById('bgm-text');
+            const btnIcon = document.getElementById('bgm-icon');
+            const btn = document.getElementById('bgm-btn');
+            
+            if (isMuted) {
+                currentTrack.pause();
+                if (btnText) btnText.innerText = 'Musik: OFF';
+                if (btnIcon) btnIcon.innerText = '🔇';
+                if (btn) {
+                    btn.classList.remove('text-cyan-300', 'border-cyan-500/50');
+                    btn.classList.add('text-red-400', 'border-red-500/50');
+                }
+            } else {
+                currentTrack.play().catch(err => console.log("Playback failed:", err));
+                if (btnText) btnText.innerText = 'Musik: ON';
+                if (btnIcon) btnIcon.innerText = '🎵';
+                if (btn) {
+                    btn.classList.remove('text-red-400', 'border-red-500/50');
+                    btn.classList.add('text-cyan-300', 'border-cyan-500/50');
+                }
+            }
         }
 
-        // Handle window resize dynamically
-        window.addEventListener('resize', () => {
-            if (GameState.phaserGame && GameState.phaserGame.scale) {
-                GameState.phaserGame.scale.resize(window.innerWidth, window.innerHeight);
+        // Audio Synthesizer (No external files)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if(audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            
+            if (type === 'shoot') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.1);
+            } else if (type === 'hit') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.5, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.2);
+            } else if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                osc.frequency.linearRampToValueAtTime(150, audioCtx.currentTime + 0.2);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.3);
+                osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'sine';
+                let now = audioCtx.currentTime;
+                [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => { // C E G C
+                    osc.frequency.setValueAtTime(freq, now + i*0.15);
+                });
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.linearRampToValueAtTime(0, now + 1);
+                osc.start(now); osc.stop(now + 1);
             }
-        });
+        }
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
         
+        let width, height;
+        let animationId;
+        let gameState = 'START'; // START, FORM, PLAYING, QUIZ, END
+        let lastTime = 0;
+        
+        // Player Data
+        const playerStats = {
+            name: '', class: '', school: '',
+            score: 0, correct: 0, wrong: 0,
+            startTime: 0, endTime: 0
+        };
+
+        const levelData = [
+            { level: 1, name: "Hutan Observasi", color1: "#0a2e0a", color2: "#1a4f1a", reqScore: 30 },
+            { level: 2, name: "Benteng Struktur", color1: "#2a2a2a", color2: "#4a4a5a", reqScore: 60 },
+            { level: 3, name: "Gurun Bahasa", color1: "#5c3a00", color2: "#8c5a00", reqScore: 90 },
+            { level: 4, name: "Zona Analisis", color1: "#4a0000", color2: "#8a1a1a", reqScore: 120 },
+            { level: 5, name: "Markas Musuh Akhir", color1: "#1a0033", color2: "#330066", reqScore: 150 }
+        ];
+
+        // Educational Content: Teks LHO
+        const questionsDatabase = [
+            // Level 1
+            { level: 1, text: "Apa pengertian utama dari teks Laporan Hasil Observasi (LHO)?", options: ["Teks yang berisi imajinasi penulis", "Teks yang menjabarkan informasi umum berdasarkan fakta dari pengamatan", "Teks yang berisi opini dan pendapat pribadi", "Teks yang menceritakan langkah-langkah membuat sesuatu"], answer: 1, category: "Pengertian" },
+            { level: 1, text: "Manakah yang BUKAN merupakan ciri-ciri teks LHO?", options: ["Bersifat objektif dan faktual", "Ditulis berdasarkan pengamatan langsung", "Mengandung unsur subjektivitas penulis", "Disajikan secara menarik dan logis"], answer: 2, category: "Ciri-ciri" },
+            { level: 1, text: "Tujuan utama penulisan teks Laporan Hasil Observasi adalah...", options: ["Menghibur pembaca", "Menyampaikan informasi klasifikasi mengenai jenis-jenis sesuatu secara faktual", "Mempengaruhi pembaca agar setuju", "Mengkritik suatu fenomena"], answer: 1, category: "Tujuan" },
+            
+            // Level 2
+            { level: 2, text: "Struktur pembuka dalam teks LHO yang berisi keterangan umum tentang subjek yang dilaporkan disebut...", options: ["Deskripsi Bagian", "Pernyataan Umum (Klasifikasi)", "Deskripsi Manfaat", "Simpulan"], answer: 1, category: "Struktur" },
+            { level: 2, text: "Jika sebuah paragraf dalam teks LHO menjelaskan ciri fisik, habitat, dan makanan harimau, paragraf tersebut termasuk struktur...", options: ["Deskripsi Bagian", "Pernyataan Umum", "Deskripsi Manfaat", "Orientasi"], answer: 0, category: "Struktur" },
+            { level: 2, text: "Bagian yang menjelaskan bahwa setiap objek yang diamati memiliki kegunaan atau fungsi dalam kehidupan disebut...", options: ["Pernyataan Umum", "Deskripsi Bagian", "Deskripsi Manfaat", "Argumentasi"], answer: 2, category: "Struktur" },
+
+            // Level 3
+            { level: 3, text: "Kalimat yang menggunakan verba (kata kerja) relasional (seperti: ialah, merupakan, adalah) biasanya merupakan kalimat...", options: ["Kalimat Deskripsi", "Kalimat Imperatif", "Kalimat Definisi", "Kalimat Tanya"], answer: 2, category: "Kebahasaan" },
+            { level: 3, text: "Manakah di bawah ini yang merupakan contoh istilah teknis dalam biologi yang sering muncul di LHO tentang hewan?", options: ["Bernapas, Makan, Tidur", "Karnivora, Mamalia, Habitat", "Sangat besar, Lucu, Menggemaskan", "Di sana, Di sini, Pada hari itu"], answer: 1, category: "Istilah Teknis" },
+            { level: 3, text: "'Harimau sumatera memiliki bulu berwarna oranye dengan loreng hitam yang khas.' Kalimat tersebut adalah contoh...", options: ["Kalimat Definisi", "Kalimat Deskripsi", "Kalimat Kompleks", "Kalimat Pasif"], answer: 1, category: "Kebahasaan" },
+
+            // Level 4
+            { level: 4, text: "Saat menganalisis teks LHO, jika ditemukan kalimat 'Menurut saya, bunga mawar sangat indah', apa kesalahan utamanya?", options: ["Tidak ada kesalahan", "Menggunakan kata sifat", "Mengandung opini/subjektivitas, LHO harus objektif", "Strukturnya terlalu pendek"], answer: 2, category: "Analisis" },
+            { level: 4, text: "Gagasan pokok dalam sebuah paragraf deskripsi bagian teks LHO biasanya terletak pada...", options: ["Awal atau akhir paragraf", "Selalu di tengah paragraf", "Judul teks", "Tidak memiliki gagasan pokok"], answer: 0, category: "Analisis" },
+            { level: 4, text: "Bagaimana cara membedakan teks LHO dengan teks Deskripsi?", options: ["LHO bersifat umum/universal, Deskripsi bersifat khusus/individual", "LHO bersifat fiksi, Deskripsi bersifat fakta", "LHO menggunakan bahasa gaul, Deskripsi baku", "Tidak ada bedanya"], answer: 0, category: "Analisis" },
+
+            // Level 5 (HOTS)
+            { level: 5, text: "Seorang siswa membuat LHO tentang 'Sampah di Sekolah'. Bagian pernyataan umum yang paling tepat adalah...", options: ["Sampah di kantin sangat bau dan menjijikkan.", "Sampah adalah sisa kegiatan sehari-hari manusia atau proses alam yang berbentuk padat.", "Sebaiknya kita membuang sampah pada tempatnya agar sekolah bersih.", "Sampah organik bisa diolah menjadi pupuk kompos yang berguna bagi tanaman."], answer: 1, category: "HOTS / Kreasi" },
+            { level: 5, text: "Analisis kalimat berikut: 'Paus biru (Balaenoptera musculus) adalah hewan mamalia laut terbesar di bumi.' Kalimat tersebut sangat esensial dalam LHO karena...", options: ["Memberikan pandangan pribadi penulis.", "Memberikan definisi ilmiah dan klasifikasi objek.", "Menjelaskan cara paus berburu makan.", "Menarik simpati pembaca."], answer: 1, category: "HOTS / Analisis" },
+            { level: 5, text: "Jika Anda menemukan teks LHO yang strukturnya langsung menjelaskan manfaat tanpa ada pernyataan umum dan deskripsi bagian, akibatnya adalah...", options: ["Teks menjadi lebih singkat dan bagus.", "Pembaca kebingungan tentang identitas dan rincian objek yang sedang dibahas.", "Guru akan memberikan nilai tinggi karena inovatif.", "Teks tersebut berubah menjadi teks narasi."], answer: 1, category: "HOTS / Evaluasi" }
+        ];
+
+        const keys = { ArrowLeft: false, ArrowRight: false, ArrowUp: false, ArrowDown: false, Space: false, KeyB: false };
+        let activeQuiz = null;
+        let quizTimerInt = null;
+
+        const camera = { x: 0 };
+        
+        class Tank {
+            constructor() {
+                this.x = 200; this.y = 0; // y set in resize
+                this.width = 80; this.height = 40;
+                this.speed = 300; // px per second
+                this.angle = 0; // turret angle
+                this.hp = 100; this.maxHp = 100;
+                this.energy = 50; this.maxEnergy = 100;
+                this.color = '#00ffff';
+                this.lastShot = 0;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - camera.x, this.y);
+                
+                // Tracks
+                ctx.fillStyle = '#222';
+                ctx.beginPath();
+                ctx.roundRect(-45, 10, 90, 20, 5);
+                ctx.fill();
+                
+                // Body glowing
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = this.color;
+                ctx.fillStyle = '#113344';
+                ctx.beginPath();
+                ctx.roundRect(-40, -15, 80, 30, 10);
+                ctx.fill();
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                
+                // Turret
+                ctx.shadowBlur = 0;
+                ctx.translate(0, -15);
+                ctx.rotate(this.angle);
+                ctx.fillStyle = '#444';
+                ctx.fillRect(0, -5, 50, 10);
+                ctx.beginPath();
+                ctx.arc(0, 0, 15, 0, Math.PI*2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                
+                ctx.restore();
+            }
+            update(dt) {
+                if(keys.ArrowLeft || keys.btnLeft) this.x -= this.speed * dt;
+                if(keys.ArrowRight || keys.btnRight) this.x += this.speed * dt;
+                
+                // Bound to level (approximate long stage)
+                if (this.x < 100) this.x = 100;
+                if (this.x > 3000) this.x = 3000;
+                
+                if(keys.ArrowUp || keys.btnUp) this.angle -= 2 * dt;
+                if(keys.ArrowDown || keys.btnDown) this.angle += 2 * dt;
+                
+                // Clamp angle
+                if (this.angle < -Math.PI) this.angle = -Math.PI;
+                if (this.angle > 0) this.angle = 0;
+                
+                // Camera follow
+                camera.x = this.x - width/3;
+                if (camera.x < 0) camera.x = 0;
+
+                // Update UI
+                document.getElementById('hp-bar').style.width = `${Math.max(0, (this.hp/this.maxHp)*100)}%`;
+                document.getElementById('energy-bar').style.width = `${Math.max(0, (this.energy/this.maxEnergy)*100)}%`;
+            }
+            shoot() {
+                if (this.energy >= 5 && performance.now() - this.lastShot > 300) {
+                    this.energy -= 5;
+                    playSound('shoot');
+                    projectiles.push(new Projectile(this.x, this.y - 15, this.angle, true));
+                    this.lastShot = performance.now();
+                }
+            }
+            bomb() {
+                if (this.energy >= 30) {
+                    this.energy -= 30;
+                    playSound('shoot');
+                    // spawn multiple projectiles
+                    for(let i=0; i<5; i++) {
+                        let ang = -Math.PI + (Math.PI/5)*i;
+                        projectiles.push(new Projectile(this.x, this.y - 15, ang, true, true));
+                    }
+                }
+            }
+        }
+
+        class Projectile {
+            constructor(x, y, angle, isPlayer, isBomb = false) {
+                this.x = x; this.y = y;
+                this.vx = Math.cos(angle) * (isBomb ? 300 : 600);
+                this.vy = Math.sin(angle) * (isBomb ? 300 : 600);
+                this.isPlayer = isPlayer;
+                this.isBomb = isBomb;
+                this.active = true;
+                this.radius = isBomb ? 8 : 4;
+            }
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                // Gravity effect for bombs
+                if (this.isBomb) this.vy += 400 * dt; 
+                
+                if (this.y > height || this.x < camera.x || this.x > camera.x + width) this.active = false;
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - camera.x, this.y);
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = this.isPlayer ? '#0ff' : '#f00';
+                ctx.fillStyle = this.isPlayer ? '#fff' : '#faa';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.radius, 0, Math.PI*2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        class Enemy {
+            constructor(x) {
+                this.x = x;
+                this.y = 0; // set in resize
+                this.hp = 20;
+                this.active = true;
+                this.hasQuiz = Math.random() > 0.3; // 70% chance to drop a quiz
+                this.type = currentLevel === 5 ? 'BOSS' : 'NORMAL';
+                if(this.type === 'BOSS') {
+                    this.hp = 100;
+                    this.width = 100;
+                    this.height = 100;
+                    this.hasQuiz = true;
+                } else {
+                    this.width = 40;
+                    this.height = 40;
+                }
+                this.lastShot = performance.now() + Math.random()*2000;
+            }
+            update(dt) {
+                // Move slowly towards player if far
+                if (this.x - tank.x > 300) {
+                    this.x -= 50 * dt;
+                }
+                
+                // Shoot
+                if (performance.now() - this.lastShot > 2000 && (this.x - tank.x) < 800) {
+                    let angle = Math.atan2(tank.y - this.y, tank.x - this.x);
+                    projectiles.push(new Projectile(this.x, this.y, angle, false));
+                    this.lastShot = performance.now();
+                }
+            }
+            draw() {
+                ctx.save();
+                ctx.translate(this.x - camera.x, this.y);
+                if (this.type === 'BOSS') {
+                    ctx.fillStyle = '#500';
+                    ctx.fillRect(-50, -50, 100, 100);
+                    ctx.fillStyle = '#f00';
+                    ctx.font = '20px Arial';
+                    ctx.fillText('BOSS', -25, -60);
+                } else {
+                    ctx.fillStyle = '#822';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -20); ctx.lineTo(20, 20); ctx.lineTo(-20, 20);
+                    ctx.fill();
+                }
+                // HP Bar
+                ctx.fillStyle = 'red';
+                ctx.fillRect(-this.width/2, -this.height/2 - 10, this.width * (this.hp/(this.type==='BOSS'?100:20)), 5);
+                
+                if (this.hasQuiz && this.type !== 'BOSS') {
+                    // Floating indicator for quiz
+                    ctx.fillStyle = 'yellow';
+                    ctx.font = '20px Arial';
+                    ctx.fillText('?', -5, -40 + Math.sin(performance.now()/200)*5);
+                }
+                ctx.restore();
+            }
+        }
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 200;
+                this.vy = (Math.random() - 0.5) * 200;
+                this.life = 1;
+                this.color = color;
+            }
+            update(dt) {
+                this.x += this.vx * dt;
+                this.y += this.vy * dt;
+                this.life -= dt * 2;
+            }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life);
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x - camera.x, this.y, 4, 4);
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        let tank;
+        let projectiles = [];
+        let enemies = [];
+        let particles = [];
+        let currentLevel = 1;
+        let groundY = 0;
+        let enemySpawnTimer = 0;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            width = canvas.width;
+            height = canvas.height;
+            groundY = height - 100;
+            if(tank) tank.y = groundY - 15;
+            enemies.forEach(e => { if(e.type !== 'BOSS') e.y = groundY - 15; else e.y = groundY - 50; });
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => console.log(err));
+            } else {
+                if (document.exitFullscreen) document.exitFullscreen();
+            }
+        }
+
+        function showInstructions() {
+            playSound('correct');
+            document.getElementById('instructions-screen').classList.remove('hidden');
+        }
+
+        function hideInstructions() {
+            playSound('hit');
+            document.getElementById('instructions-screen').classList.add('hidden');
+        }
+
+        function showForm() {
+            playSound('correct');
+            playBGM();
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('form-screen').classList.remove('hidden');
+        }
+
+        function startGame() {
+            const name = document.getElementById('playerName').value;
+            const cls = document.getElementById('playerClass').value;
+            const scl = document.getElementById('playerSchool').value;
+            
+            if(!name || !cls || !scl) {
+                alert("Mohon isi semua data komandan!");
+                return;
+            }
+
+            playerStats.name = name;
+            playerStats.class = cls;
+            playerStats.school = scl;
+            playerStats.startTime = Date.now();
+
+            playSound('correct');
+            playBGM();
+            document.getElementById('form-screen').classList.add('hidden');
+            document.getElementById('hud').classList.remove('hidden');
+            
+            // Show touch controls if on mobile
+            if (window.innerWidth <= 768 || 'ontouchstart' in window) {
+                document.getElementById('controls').classList.remove('hidden');
+            }
+
+            initGame();
+        }
+
+        function initGame() {
+            switchTrack(bgMusic);
+            tank = new Tank();
+            resize();
+            projectiles = [];
+            enemies = [];
+            particles = [];
+            currentLevel = 1;
+            playerStats.score = 0;
+            gameState = 'PLAYING';
+            updateLevelUI();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updateLevelUI() {
+            let lv = levelData[currentLevel - 1];
+            document.getElementById('level-display').innerText = `LEVEL ${currentLevel}`;
+            document.getElementById('level-name').innerText = lv.name;
+            document.getElementById('score-display').innerText = playerStats.score;
+
+            // Switch to Level 5 boss track when entering Level 5
+            if (currentLevel === 5) {
+                switchTrack(bossMusic);
+            } else {
+                switchTrack(bgMusic);
+            }
+        }
+
+        window.addEventListener('keydown', e => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = true;
+            if (e.code === 'Space' && gameState === 'PLAYING') tank.shoot();
+            if (e.code === 'KeyB' && gameState === 'PLAYING') tank.bomb();
+        });
+        window.addEventListener('keyup', e => {
+            if (keys.hasOwnProperty(e.code)) keys[e.code] = false;
+        });
+
+        // Touch Controls Setup
+        function bindTouch(id, keyName, action) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                keys[keyName] = true;
+                el.classList.add('active');
+                if(action === 'shoot') tank.shoot();
+                if(action === 'bomb') tank.bomb();
+            }, {passive: false});
+            el.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                keys[keyName] = false;
+                el.classList.remove('active');
+            }, {passive: false});
+        }
+
+        bindTouch('btn-left', 'btnLeft');
+        bindTouch('btn-right', 'btnRight');
+        bindTouch('btn-up', 'btnUp');
+        bindTouch('btn-down', 'btnDown');
+        bindTouch('btn-shoot', 'btnShoot', 'shoot');
+        bindTouch('btn-bomb', 'btnBomb', 'bomb');
+
+        function triggerQuiz() {
+            gameState = 'QUIZ';
+            keys.ArrowLeft = keys.ArrowRight = false; // Stop movement
+            
+            // Filter questions by level
+            let levelQs = questionsDatabase.filter(q => q.level === currentLevel);
+            let q = levelQs[Math.floor(Math.random() * levelQs.length)];
+            activeQuiz = q;
+
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            document.getElementById('quiz-category').innerText = q.category;
+            document.getElementById('quiz-question').innerText = q.text;
+            
+            const optionsContainer = document.getElementById('quiz-options');
+            optionsContainer.innerHTML = '';
+            
+            q.options.forEach((opt, index) => {
+                const btn = document.createElement('button');
+                btn.className = "bg-gray-700 hover:bg-cyan-600 text-white font-semibold py-3 px-4 border border-gray-600 rounded shadow transition text-left";
+                btn.innerText = String.fromCharCode(65 + index) + ". " + opt;
+                btn.onclick = () => answerQuiz(index, btn);
+                optionsContainer.appendChild(btn);
+            });
+
+            document.getElementById('quiz-feedback').classList.add('hidden');
+            
+            let timeLeft = 30;
+            document.getElementById('quiz-timer').innerText = timeLeft;
+            clearInterval(quizTimerInt);
+            quizTimerInt = setInterval(() => {
+                timeLeft--;
+                document.getElementById('quiz-timer').innerText = timeLeft;
+                if(timeLeft <= 0) {
+                    clearInterval(quizTimerInt);
+                    answerQuiz(-1, null); // Timeout -> wrong
+                }
+            }, 1000);
+        }
+
+        function answerQuiz(selectedIndex, btnElement) {
+            clearInterval(quizTimerInt);
+            const feedback = document.getElementById('quiz-feedback');
+            feedback.classList.remove('hidden');
+            
+            const buttons = document.getElementById('quiz-options').querySelectorAll('button');
+            buttons.forEach(b => b.disabled = true);
+
+            if (selectedIndex === activeQuiz.answer) {
+                playSound('correct');
+                feedback.innerText = "✅ JAWABAN BENAR!";
+                feedback.className = "mt-6 text-center text-xl font-bold text-green-400";
+                if(btnElement) btnElement.classList.replace('bg-gray-700', 'bg-green-600');
+                
+                playerStats.score += 10;
+                playerStats.correct++;
+                tank.energy = Math.min(tank.maxEnergy, tank.energy + 20);
+                
+                checkLevelUp();
+            } else {
+                playSound('wrong');
+                feedback.innerText = "❌ JAWABAN SALAH!";
+                feedback.className = "mt-6 text-center text-xl font-bold text-red-400";
+                if(btnElement) btnElement.classList.replace('bg-gray-700', 'bg-red-600');
+                // Highlight correct
+                buttons[activeQuiz.answer].classList.replace('bg-gray-700', 'bg-green-600');
+                
+                playerStats.score = Math.max(0, playerStats.score - 5);
+                playerStats.wrong++;
+                tank.hp -= 20;
+            }
+
+            document.getElementById('score-display').innerText = playerStats.score;
+
+            setTimeout(() => {
+                document.getElementById('quiz-screen').classList.add('hidden');
+                if (tank.hp <= 0) {
+                    gameOver(false);
+                } else if (currentLevel > 5) {
+                    gameOver(true);
+                } else {
+                    gameState = 'PLAYING';
+                    lastTime = performance.now();
+                    requestAnimationFrame(gameLoop);
+                }
+            }, 2000);
+        }
+
+        function checkLevelUp() {
+            let req = levelData[currentLevel - 1]?.reqScore;
+            if (req && playerStats.score >= req && currentLevel < 5) {
+                currentLevel++;
+                updateLevelUI();
+                tank.hp = tank.maxHp; // heal on level up
+                // Spawn particle effect
+                for(let i=0; i<30; i++) particles.push(new Particle(tank.x, tank.y, '#0f0'));
+            } else if (currentLevel === 5 && req && playerStats.score >= req) {
+                // If boss defeated and score reached
+                // Handled in boss death
+            }
+        }
+
+        function drawBackground() {
+            if (bgImageLoaded) {
+                ctx.drawImage(bgImage, 0, 0, width, height);
+            } else {
+                let lv = levelData[currentLevel - 1] || levelData[0];
+                let grad = ctx.createLinearGradient(0, 0, 0, height);
+                grad.addColorStop(0, lv.color1);
+                grad.addColorStop(1, lv.color2);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, width, height);
+            }
+
+            // Ground
+            ctx.fillStyle = 'rgba(17, 17, 17, 0.85)';
+            ctx.fillRect(0, groundY, width, height - groundY);
+            
+            // Grid lines for futuristic effect
+            ctx.strokeStyle = 'rgba(0, 255, 255, 0.15)';
+            ctx.lineWidth = 1;
+            let startX = - (camera.x % 50);
+            for(let i = startX; i < width; i += 50) {
+                ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, groundY); ctx.stroke();
+            }
+        }
+
+        function spawnExplosion(x, y, color) {
+            playSound('hit');
+            for(let i=0; i<15; i++) {
+                particles.push(new Particle(x, y, color));
+            }
+        }
+
+        function gameLoop(timestamp) {
+            if (gameState !== 'PLAYING') return;
+            
+            let dt = (timestamp - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1; // Cap dt for lag spikes
+            lastTime = timestamp;
+
+            // Spawn enemies based on level
+            enemySpawnTimer -= dt;
+            if (enemySpawnTimer <= 0 && enemies.length < 3 && currentLevel < 5) {
+                enemies.push(new Enemy(camera.x + width + 100));
+                enemySpawnTimer = 3 + Math.random() * 2;
+            } else if (currentLevel === 5 && enemies.length === 0 && playerStats.score >= 120) {
+                // Spawn boss
+                let boss = new Enemy(camera.x + width - 100);
+                enemies.push(boss);
+                enemySpawnTimer = 9999; // Only one boss
+            }
+
+            // Update entities
+            tank.update(dt);
+            
+            projectiles.forEach(p => p.update(dt));
+            enemies.forEach(e => e.update(dt));
+            particles.forEach(p => p.update(dt));
+
+            // Collision Detection
+            for(let i = projectiles.length - 1; i >= 0; i--) {
+                let p = projectiles[i];
+                let pDestroyed = false;
+                
+                if (p.isPlayer) {
+                    for(let j = enemies.length - 1; j >= 0; j--) {
+                        let e = enemies[j];
+                        // Simple rect collision approx
+                        if (Math.abs(p.x - e.x) < e.width/2 + p.radius && Math.abs(p.y - e.y) < e.height/2 + p.radius) {
+                            e.hp -= p.isBomb ? 20 : 10;
+                            pDestroyed = true;
+                            spawnExplosion(p.x, p.y, '#ffa500');
+                            
+                            if (e.hp <= 0) {
+                                spawnExplosion(e.x, e.y, '#f00');
+                                let dropQuiz = e.hasQuiz;
+                                let wasBoss = e.type === 'BOSS';
+                                enemies.splice(j, 1);
+                                
+                                if (wasBoss) {
+                                    setTimeout(() => gameOver(true), 1500); // Win!
+                                } else if (dropQuiz) {
+                                    triggerQuiz();
+                                }
+                            }
+                            break; // Proyektil hancur
+                        }
+                    }
+                } else {
+                    // Enemy hitting player
+                    if (Math.abs(p.x - tank.x) < tank.width/2 + p.radius && Math.abs(p.y - tank.y) < tank.height/2 + p.radius) {
+                        tank.hp -= 5;
+                        pDestroyed = true;
+                        spawnExplosion(p.x, p.y, '#ff0000');
+                        if (tank.hp <= 0) gameOver(false);
+                    }
+                }
+                if(pDestroyed) projectiles.splice(i, 1);
+            }
+
+            // Cleanup inactive arrays
+            projectiles = projectiles.filter(p => p.active);
+            particles = particles.filter(p => p.life > 0);
+
+            // Draw everything
+            ctx.clearRect(0, 0, width, height);
+            drawBackground();
+            
+            particles.forEach(p => p.draw());
+            projectiles.forEach(p => p.draw());
+            enemies.forEach(e => e.draw());
+            tank.draw();
+
+            // Energy recharge slowly
+            tank.energy = Math.min(tank.maxEnergy, tank.energy + 1 * dt);
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function gameOver(isWin) {
+            gameState = 'END';
+            playerStats.endTime = Date.now();
+            
+            document.getElementById('hud').classList.add('hidden');
+            document.getElementById('controls').classList.add('hidden');
+            
+            const screen = document.getElementById('result-screen');
+            screen.classList.remove('hidden');
+            
+            if (isWin) {
+                playSound('win');
+                document.getElementById('result-title').innerText = "🎉 MISI BERHASIL!";
+                document.getElementById('result-subtitle').innerText = "SELAMAT! PUTRI OBSERVASI BERHASIL DISELAMATKAN!";
+                document.getElementById('result-title').className = "text-4xl font-black text-green-400 mb-2 title-glow";
+            } else {
+                playSound('wrong');
+                document.getElementById('result-title').innerText = "💀 MISI GAGAL";
+                document.getElementById('result-subtitle').innerText = "Tank Hancur. Pasukan musuh terlalu kuat.";
+                document.getElementById('result-title').className = "text-4xl font-black text-red-500 mb-2 title-glow";
+            }
+
+            document.getElementById('res-name').innerText = playerStats.name;
+            document.getElementById('res-class').innerText = playerStats.class;
+            document.getElementById('res-school').innerText = playerStats.school;
+            document.getElementById('res-score').innerText = playerStats.score;
+            document.getElementById('res-correct').innerText = playerStats.correct;
+            document.getElementById('res-wrong').innerText = playerStats.wrong;
+            document.getElementById('res-level').innerText = currentLevel;
+        }
+
+        function downloadExcel() {
+            // Create simple CSV
+            let timePlayed = Math.round((playerStats.endTime - playerStats.startTime) / 1000); // seconds
+            
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "Nama Peserta,Kelas,Asal Sekolah,Total Skor,Jawaban Benar,Jawaban Salah,Level Terakhir,Waktu Bermain (detik)\r\n";
+            csvContent += `"${playerStats.name}","${playerStats.class}","${playerStats.school}",${playerStats.score},${playerStats.correct},${playerStats.wrong},${currentLevel},${timePlayed}\r\n`;
+
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `Rekap_Nilai_LHO_${playerStats.name.replace(/\s+/g, '_')}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
     </script>
 </body>
 </html>
